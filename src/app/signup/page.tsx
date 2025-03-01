@@ -29,6 +29,15 @@ export default function SignUp() {
           <div className="space-y-4">
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-white/80">
+                NAME
+              </label>
+              <input
+                placeholder="John Doe"
+                className="mt-1 block w-full px-4 py-3 bg-white/10 border border-white/10 rounded-md text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-white/30 focus:border-transparent"
+              />
+            </div>
+            <div>
+              <label htmlFor="email" className="block text-sm font-medium text-white/80">
                 EMAIL ADDRESS
               </label>
               <input
@@ -53,6 +62,7 @@ export default function SignUp() {
                 name="password"
                 type="password"
                 autoComplete="new-password"
+                placeholder="Create a Strong Password"
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -69,6 +79,7 @@ export default function SignUp() {
                 name="confirmPassword"
                 type="password"
                 autoComplete="new-password"
+                placeholder="Re-enter Your Password"
                 required
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}

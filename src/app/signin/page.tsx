@@ -2,14 +2,20 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 export default function SignIn() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const router = useRouter();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    // TODO: Implement actual authentication
     console.log('Sign in attempt with:', email);
+    
+    // For now, just redirect to university selection
+    router.push('/university');
   };
 
   return (
@@ -53,6 +59,7 @@ export default function SignIn() {
                 name="password"
                 type="password"
                 autoComplete="current-password"
+                placeholder="Enter Your Password"
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -64,9 +71,8 @@ export default function SignIn() {
           <div>
             <button
               type="submit"
-              className="w-full flex justify-center px-4 py-3 bg-white text-black hover:bg-gray-100 transition-colors rounded-md font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-white/30"
-            >
-              Sign in
+              className="w-full flex justify-center px-4 py-3 bg-white text-black hover:bg-gray-100 transition-colors rounded-md font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-white/30">
+              Sign in 
             </button>
           </div>
         </form>
