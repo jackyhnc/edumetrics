@@ -195,7 +195,7 @@ export default function UniversitySelection() {
               </div>
             )}
           </div>
-
+          <Link href="/option">
           <button
             type="submit"
             disabled={!selectedCollege}
@@ -207,6 +207,7 @@ export default function UniversitySelection() {
           >
             Continue
           </button>
+          </Link>
         </form>
       </div>
     </div>

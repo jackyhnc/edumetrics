@@ -34,24 +34,6 @@ export default function LandingPage() {
             Streamline your learning experience with our simple, intuitive platform.
             Get personalized tutoring and real-time analytics to boost your academic success.
           </p>
-          
-          <div className="flex flex-col sm:flex-row gap-4 items-start">
-            <div className="relative">
-              <input
-                type="email"
-                placeholder="Enter your email"
-                className="w-full sm:w-80 px-6 py-3 bg-white/10 rounded-md text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-white/30"
-              />
-            </div>
-            <button className="px-8 py-3 bg-white text-black hover:bg-gray-100 transition-colors rounded-md font-medium">
-              <Link
-                href="/signup"
-                className="px-6 py-2 bg-white text-black hover:bg-gray-100 transition-colors rounded-md">
-            GET STARTED
-          </Link>
-            </button>
-          </div>
-          
           <div className="flex gap-6 mt-6 text-sm text-white/50">
             <div className="flex items-center gap-2">
             </div>
