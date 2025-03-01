@@ -10,7 +10,6 @@ export default function SignUp() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: Implement sign up logic
     console.log('Sign up attempt with:', email);
   };
 
