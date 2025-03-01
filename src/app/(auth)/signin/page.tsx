@@ -2,15 +2,31 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
+import { useSession } from '@/context';
+import { useRouter } from 'next/navigation';
 
-export default function SignUp() {
+export default function SignIn() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
+  const [error, setError] = useState('');
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const { handleLogin } = useSession();
+  const router = useRouter();
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Sign up attempt with:', email);
+    setError('');
+
+    try {
+      const user = await handleLogin(email, password);
+      if (user) {
+        router.push('/home'); 
+      } else {
+        setError('Invalid email or password. Please try again.');
+      }
+    } catch (err) {
+      setError('An error occurred during sign-in.');
+    }
   };
 
   return (
@@ -20,22 +36,12 @@ export default function SignUp() {
           <Link href="/" className="text-2xl font-bold text-white hover:text-white/90 transition-colors">
             EduMetrics
           </Link>
-          <h2 className="mt-6 text-3xl font-bold text-white">Create your account</h2>
-          <p className="mt-2 text-white/70">
-          </p>
+          <h2 className="mt-6 text-3xl font-bold text-white">Welcome back</h2>
+          <p className="mt-2 text-white/70">Sign in to your account</p>
         </div>
 
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           <div className="space-y-4">
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-white/80">
-                NAME
-              </label>
-              <input
-                placeholder="John Doe"
-                className="mt-1 block w-full px-4 py-3 bg-white/10 border border-white/10 rounded-md text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-white/30 focus:border-transparent"
-              />
-            </div>
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-white/80">
                 EMAIL ADDRESS
@@ -61,28 +67,10 @@ export default function SignUp() {
                 id="password"
                 name="password"
                 type="password"
-                autoComplete="new-password"
-                placeholder="Create a Strong Password"
+                autoComplete="current-password"
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="mt-1 block w-full px-4 py-3 bg-white/10 border border-white/10 rounded-md text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-white/30 focus:border-transparent"
-              />
-            </div>
-
-            <div>
-              <label htmlFor="confirmPassword" className="block text-sm font-medium text-white/80">
-                CONFIRM PASSWORD
-              </label>
-              <input
-                id="confirmPassword"
-                name="confirmPassword"
-                type="password"
-                autoComplete="new-password"
-                placeholder="Re-enter Your Password"
-                required
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
                 className="mt-1 block w-full px-4 py-3 bg-white/10 border border-white/10 rounded-md text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-white/30 focus:border-transparent"
               />
             </div>
@@ -93,26 +81,28 @@ export default function SignUp() {
               type="submit"
               className="w-full flex justify-center px-4 py-3 bg-white text-black hover:bg-gray-100 transition-colors rounded-md font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-white/30"
             >
-              Create account
+              Sign in
             </button>
-          </div>
-
-          <div className="flex gap-6 justify-center text-sm text-white/50">
-            <div className="flex items-center gap-2">
-            </div>
           </div>
         </form>
 
+        {/* Error message at the bottom */}
+        {error && (
+          <div className="text-red-500 text-center mt-4">
+            {error}
+          </div>
+        )}
+
         <div className="text-center text-sm">
           <p className="text-white/50">
-            Already have an account?{' '}
-            <Link href="/signin" className="font-medium text-white hover:text-white/80">
-              Sign in
+            Don't have an account?{' '}
+            <Link href="/signup" className="font-medium text-white hover:text-white/80">
+              Sign up
             </Link>{' '}
-            instead.
+            for free.
           </p>
         </div>
       </div>
     </div>
   );
-} 
+}

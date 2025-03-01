@@ -1,4 +1,4 @@
-
+"use client"
 import { createUserWithEmailAndPassword, onAuthStateChanged, signInWithEmailAndPassword, signOut, User } from "firebase/auth";
 import { createContext, useContext, useEffect, useState } from "react";
 import { auth } from "../config/firebase";
@@ -37,6 +37,7 @@ export function SessionProvided(props: { children: React.ReactNode }) {
 
     try {
       const response = await createUserWithEmailAndPassword(auth, email, password);
+      console.log(response)
       return response?.user;
     } catch (error) {
       console.log(error);
@@ -59,7 +60,7 @@ export function SessionProvided(props: { children: React.ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, isLoading, handleLogin, handleLogout }}>
+    <AuthContext.Provider value={{ user, isLoading, handleLogin, handleSignup, handleLogout }}>
       {props.children}
     </AuthContext.Provider>
   )
