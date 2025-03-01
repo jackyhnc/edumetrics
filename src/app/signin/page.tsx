@@ -13,19 +13,22 @@ export default function SignIn() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="max-w-md w-full space-y-8 p-8 bg-white rounded-lg shadow-lg">
+    <div className="min-h-screen flex items-center justify-center bg-black">
+      <div className="max-w-md w-full space-y-8 p-8">
         <div className="text-center">
-          <h2 className="text-3xl font-bold text-black">Sign In</h2>
-          <p className="mt-2 text-black">
-            Use your email and password to sign in
+          <Link href="/" className="text-2xl font-bold text-white hover:text-white/90 transition-colors">
+            EduMetrics
+          </Link>
+          <h2 className="mt-6 text-3xl font-bold text-white">Welcome back</h2>
+          <p className="mt-2 text-white/70">
+            Sign in to your account
           </p>
         </div>
 
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           <div className="space-y-4">
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-black">
+              <label htmlFor="email" className="block text-sm font-medium text-white/80">
                 EMAIL ADDRESS
               </label>
               <input
@@ -36,13 +39,13 @@ export default function SignIn() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="calvinzhou@gmail.com"
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
+                placeholder="you@example.com"
+                className="mt-1 block w-full px-4 py-3 bg-white/10 border border-white/10 rounded-md text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-white/30 focus:border-transparent"
               />
             </div>
 
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+              <label htmlFor="password" className="block text-sm font-medium text-white/80">
                 PASSWORD
               </label>
               <input
@@ -53,23 +56,25 @@ export default function SignIn() {
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="mt-1 block w-full px-4 py-3 bg-white/10 border border-white/10 rounded-md text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-white/30 focus:border-transparent"
               />
             </div>
           </div>
 
-          <button
-            type="submit"
-            className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-          >
-            Sign in
-          </button>
+          <div>
+            <button
+              type="submit"
+              className="w-full flex justify-center px-4 py-3 bg-white text-black hover:bg-gray-100 transition-colors rounded-md font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-white/30"
+            >
+              Sign in
+            </button>
+          </div>
         </form>
 
         <div className="text-center text-sm">
-          <p className="text-gray-600">
+          <p className="text-white/50">
             Don't have an account?{' '}
-            <Link href="/signup" className="font-medium text-blue-600 hover:text-blue-500">
+            <Link href="/signup" className="font-medium text-white hover:text-white/80">
               Sign up
             </Link>{' '}
             for free.

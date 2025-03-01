@@ -1,81 +1,82 @@
 'use client';
 
-import React, { useState } from 'react';
+import React from 'react';
 import Link from 'next/link';
 
-export default function SignIn() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    console.log('Sign in attempt with:', email);
-  };
-
+export default function LandingPage() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="max-w-md w-full space-y-8 p-8 bg-white rounded-lg shadow-lg">
-        <div className="text-center">
-          <h2 className="text-3xl font-bold text-black">Sign In</h2>
-          <p className="mt-2 text-black">
-            Use your email and password to sign in
-          </p>
+    <div className="min-h-screen flex flex-col bg-black text-white">
+      <header className="p-6 flex justify-between items-center max-w-7xl mx-auto w-full">
+        <div className="text-2xl font-bold">EduMetrics</div>
+        <div className="flex gap-6">
+          <Link 
+            href="/signin"
+            className="px-6 py-2 text-white/80 hover:text-white transition-colors"
+          >
+            SIGN IN
+          </Link>
+          <Link
+            href="/signup"
+            className="px-6 py-2 bg-white text-black hover:bg-gray-100 transition-colors rounded-md"
+          >
+            GET STARTED
+          </Link>
         </div>
+      </header>
 
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-          <div className="space-y-4">
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-black">
-                EMAIL ADDRESS
-              </label>
+      <main className="flex-1 flex flex-col lg:flex-row max-w-7xl mx-auto w-full px-6 py-20">
+        <div className="flex-1 flex flex-col justify-center lg:pr-20">
+          <h1 className="text-5xl lg:text-6xl font-bold mb-6 leading-tight">
+            Spending too much time on tutoring,<br />
+            not your studies?
+          </h1>
+          <p className="text-xl text-white/70 mb-12 leading-relaxed">
+            Streamline your learning experience with our simple, intuitive platform.
+            Get personalized tutoring and real-time analytics to boost your academic success.
+          </p>
+          
+          <div className="flex flex-col sm:flex-row gap-4 items-start">
+            <div className="relative">
               <input
-                id="email"
-                name="email"
                 type="email"
-                autoComplete="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="calvinzhou@gmail.com"
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
+                placeholder="Enter your email"
+                className="w-full sm:w-80 px-6 py-3 bg-white/10 rounded-md text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-white/30"
               />
             </div>
-
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-                PASSWORD
-              </label>
-              <input
-                id="password"
-                name="password"
-                type="password"
-                autoComplete="current-password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              />
+            <button className="px-8 py-3 bg-white text-black hover:bg-gray-100 transition-colors rounded-md font-medium">
+              <Link
+                href="/signup"
+                className="px-6 py-2 bg-white text-black hover:bg-gray-100 transition-colors rounded-md">
+            GET STARTED
+          </Link>
+            </button>
+          </div>
+          
+          <div className="flex gap-6 mt-6 text-sm text-white/50">
+            <div className="flex items-center gap-2">
+            </div>
+            <div className="flex items-center gap-2">
             </div>
           </div>
-
-          <button
-            type="submit"
-            className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-          >
-            Sign in
-          </button>
-        </form>
-
-        <div className="text-center text-sm">
-          <p className="text-gray-600">
-            Don't have an account?{' '}
-            <Link href="/signup" className="font-medium text-blue-600 hover:text-blue-500">
-              Sign up
-            </Link>{' '}
-            for free.
-          </p>
         </div>
-      </div>
+
+        <div className="flex-1 mt-12 lg:mt-0">
+          <div className="grid gap-6">
+            <div className="bg-white/10 p-8 rounded-lg hover:bg-white/[0.15] transition-colors">
+              <h3 className="text-xl font-semibold mb-3">Better Success</h3>
+              <p className="text-white/70">Track your progress and improve your grades with data-driven insights and personalized support.</p>
+            </div>
+            <div className="bg-white/10 p-8 rounded-lg hover:bg-white/[0.15] transition-colors">
+              <h3 className="text-xl font-semibold mb-3">Personalized Learning</h3>
+              <p className="text-white/70">Get matched with tutors that fit your learning style and schedule.</p>
+            </div>
+            <div className="bg-white/10 p-8 rounded-lg hover:bg-white/[0.15] transition-colors">
+              <h3 className="text-xl font-semibold mb-3">Real-Time Analytics</h3>
+              <p className="text-white/70">Monitor your improvement with instant feedback and detailed performance metrics.</p>
+            </div>
+          </div>
+        </div>
+      </main>
     </div>
   );
 }
