@@ -28,7 +28,7 @@ export default function SignUp() {
       if (user) {
         router.push('/university'); // Redirect only if signup is successful
       } else {
-        setError('Signup failed. Please try again.');
+        setError('Password must be at least 8 characters long and include at least one letter and one special character.');
       }
     } catch (err) {
       setError('An error occurred during signup.');
