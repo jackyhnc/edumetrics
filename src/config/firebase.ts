@@ -1,195 +1,245 @@
 import {
-    getFirestore,
-    addDoc,
-    collection,
-    getDocs,
-    CollectionReference,
-    DocumentData,
-    query,
-    where,
-    DocumentReference,
+  getFirestore,
+  addDoc,
+  collection,
+  getDocs,
+  CollectionReference,
+  DocumentData,
+  query,
+  where,
+  DocumentReference,
+  setDoc,
 } from "firebase/firestore";
 import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
-import { generateText } from "ai";
-import { openai } from "@ai-sdk/openai";
+import { generateText, UIMessage } from "ai";
+import { createOpenAI } from "@ai-sdk/openai";
 import firebaseConfig from "./firebase.json";
 
+const openai = createOpenAI({
+  apiKey: process.env.NEXT_PUBLIC_OPENAI_API_KEY,
+});
+
 const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
+export const db = getFirestore(app);
 export const auth = getAuth(app);
 
-interface DocumentPrompt {
-    university: string;
-    course: string;
-    subtopic: string;
-    prompt: string;
-    rating: number;
+export interface DocumentUser {
+  email: string;
+  university: string;
+  role: string;
 }
 
-interface Prompt {
+export interface DocumentCourse {
+  university: string;
+  course: string;
+  description?: string;
+  credits?: number;
+  sections?: number;
+}
+
+export interface DocumentPrompt extends DocumentCourse {
+  subtopic: string;
+  prompt: string;
+  rating: number;
+}
+
+export interface DocumentChat extends DocumentUser {
+  id: string;
+  name: string;
+  course: string;
+  prompts: Array<{
+    id: string;
     content: string;
-    role: string;
-    time: number;
-    attachments?: unknown;
-}
-
-interface DocumentChat {
-    name: string;
-    email: string;
-    role: string;
-    course: string;
-    prompts: Prompt[];
+    role: "system" | "user" | "assistant" | "data";
+  }>;
 }
 
 async function findDoc(
-    collectionRef: CollectionReference<DocumentData, DocumentData>,
-    field: string,
-    value: unknown
+  collectionRef: CollectionReference<DocumentData, DocumentData>,
+  field: string,
+  value: unknown
 ): Promise<DocumentReference<unknown, DocumentData> | null> {
-    const snapshot = await getDocs(query(collectionRef, where(field, "==", value)));
+  const snapshot = await getDocs(query(collectionRef, where(field, "==", value)));
 
-    // Return existing document reference
-    if (!snapshot.empty) {
-        return snapshot.docs[0].ref;
-    }
-    return null;
+  // Return existing document reference
+  if (!snapshot.empty) {
+    return snapshot.docs[0].ref;
+  }
+  return null;
 }
 
 async function findOrCreateDoc(
-    collectionRef: CollectionReference<DocumentData, DocumentData>,
-    field: string,
-    value: unknown,
-    additionalData = {}
+  collectionRef: CollectionReference<DocumentData, DocumentData>,
+  field: string,
+  value: unknown,
+  additionalData = {}
 ) {
-    const docRef = await findDoc(collectionRef, field, value);
-    return docRef ?? (await addDoc(collectionRef, { [field]: value, ...additionalData }));
+  const docRef = await findDoc(collectionRef, field, value);
+  return docRef ?? (await addDoc(collectionRef, { [field]: value, ...additionalData }));
+}
+
+export async function addNewUser(docInfo: DocumentUser) {
+  const usersRef = collection(db, "users");
+
+  return await findOrCreateDoc(usersRef, "email", docInfo.email, {
+    role: docInfo.role,
+    university: docInfo.university,
+  });
 }
 
 export async function addNewChat(info: DocumentChat) {
-    const usersRef = collection(db, "users");
+  // Find or create user
+  const userRef = await addNewUser({
+    email: info.email,
+    university: info.university,
+    role: info.role,
+  });
 
-    // Find or create user
-    const userRef = await findOrCreateDoc(usersRef, "email", info.email, {
-        role: info.role,
+  const chatsRef = collection(userRef, "chats");
+
+  // Check if chat exists
+  const chatRef = await findDoc(chatsRef, "id", info.id);
+
+  if (chatRef) {
+    // If chat exists, update it
+    await setDoc(chatRef, {
+      course: info.course,
+      prompts: info.prompts,
+      id: info.id,
+      name: info.name,
     });
-
-    const chatsRef = collection(userRef, "chats");
-
-    // Check if chat exists
-    const chatRef = await findOrCreateDoc(chatsRef, "name", info.name, {
-        course: info.course,
-        prompts: info.prompts,
+  } else {
+    // If chat does not exist, create it
+    await addDoc(chatsRef, {
+      course: info.course,
+      prompts: info.prompts,
+      id: info.id,
+      name: info.name,
     });
+  }
 
-    return chatRef;
+  return chatRef || (await findDoc(chatsRef, "id", info.id));
+}
+
+
+export async function addNewCourse(info: DocumentCourse) {
+  const uniRef = await findOrCreateDoc(collection(db, "universities"), "name", info.university);
+
+  return await findOrCreateDoc(collection(uniRef, "courses"), "name", info.course);
 }
 
 export async function addPrompt(info: DocumentPrompt) {
-    const universitiesRef = collection(db, "universities");
+  const courseRef = await addNewCourse(info);
+  const subjectRef = await findOrCreateDoc(collection(courseRef, "subjects"), "subtopic", info.subtopic);
 
-    // Find or create university, course, and subject
-    const uniRef = await findOrCreateDoc(universitiesRef, "name", info.university);
-    const courseRef = await findOrCreateDoc(collection(uniRef, "courses"), "name", info.course);
-    const subjectRef = await findOrCreateDoc(collection(courseRef, "subjects"), "subtopic", info.subtopic);
+  return await findOrCreateDoc(collection(subjectRef, "prompts"), "prompt", info.prompt, {
+    rating: info.rating,
+  });
+}
 
-    // Find or create prompt
-    return await findOrCreateDoc(collection(subjectRef, "prompts"), "prompt", info.prompt, {
-        rating: info.rating,
-    });
+interface DocumentUserChats extends DocumentUser {
+    id: string
+}
+
+export async function getChats(info: DocumentUserChats) {
+  const userRef = await findDoc(collection(db, "users"), "email", info.email);
+  const chatsRef = userRef && (await getDocs(collection(userRef, "chats")));
+
+  if (!chatsRef) {
+    return [];
+  }
+  return chatsRef.docs.map((doc) => doc.data());
 }
 
 export class EduMetricsAPI {
-    university: string;
-    course: string;
+  // Get all universities stored in database
+  static async getUniversities() {
+    return (await getDocs(collection(db, "universities"))).docs.map((doc) => doc.data().name);
+  }
 
-    constructor() {
-        this.university = "";
-        this.course = "";
+  // Get all courses listed under selected university
+  static async getCourses(university: string): Promise<string[]> {
+    const docRef = await findDoc(collection(db, "universities"), "name", university);
+
+    if (!docRef) {
+      return [];
+    }
+    return (await getDocs(collection(docRef, "courses"))).docs.map((doc) => doc.data().name);
+  }
+
+  // Get all subjects listed under selected university and course
+  static async getSubjects(university: string, course: string) {
+    const uniRef = await findDoc(collection(db, "universities"), "name", university);
+    const courseRef = uniRef && (await findDoc(collection(uniRef, "courses"), "name", course));
+
+    if (!courseRef) {
+      return [];
     }
 
-    // Get all universities stored in database
-    static async getUniversities() {
-        return (await getDocs(collection(db, "universities"))).docs.map((doc) => doc.data().name);
+    return (await getDocs(collection(courseRef, "subjects"))).docs.map((doc) => doc.data().subtopic);
+  }
+
+  // Get all prompts for a specific subject
+  static async getPrompts(university: string, course: string, subject: string) {
+    const uniRef = await findDoc(collection(db, "universities"), "name", university);
+    const courseRef = uniRef && (await findDoc(collection(uniRef, "courses"), "name", course));
+    const subjectRef = courseRef && (await findDoc(collection(courseRef, "subjects"), "subtopic", subject));
+
+    if (!subjectRef) {
+      return [];
     }
 
-    // Get all courses listed under selected university
-    static async getCourses(university: string) {
-        const docRef = await findDoc(collection(db, "universities"), "name", university);
+    const promptsSnapshot = await getDocs(collection(subjectRef, "prompts"));
+    return promptsSnapshot.docs.map((doc) => {
+      const data = doc.data();
+      return {
+        prompt: data.prompt,
+        rating: data.rating,
+      };
+    });
+  }
 
-        if (!docRef) {
-            return [];
-        }
-        return (await getDocs(collection(docRef, "courses"))).docs.map((doc) => doc.data().name);
-    }
+  static async getSubjectAverageRating(university: string, course: string, subject: string) {
+    const prompts = await this.getPrompts(university, course, subject);
+    const averageRating = prompts.reduce((sum, prompt) => sum + prompt.rating, 0) / prompts.length;
+    return averageRating;
+  }
 
-    // Get all subjects listed under selected university and course
-    static async getSubjects(university: string, course: string) {
-        const uniRef = await findDoc(collection(db, "universities"), "name", university);
-        const courseRef = uniRef && (await findDoc(collection(uniRef, "courses"), "name", course));
+  static async getCourseAverageRating(university: string, course: string) {
+    const subjects = await this.getSubjects(university, course);
+    const subjectAverageRatings = await Promise.all(
+      subjects.map((subject) => this.getSubjectAverageRating(university, course, subject))
+    );
+    const averageRating = subjectAverageRatings.reduce((sum, rating) => sum + rating, 0) / subjectAverageRatings.length;
+    return averageRating;
+  }
 
-        if (!courseRef) {
-            return [];
-        }
-
-        return (await getDocs(collection(courseRef, "subjects"))).docs.map((doc) => doc.data().subtopic);
-    }
-
-    // Get all prompts for a specific subject
-    static async getPrompts(university: string, course: string, subject: string) {
-        const uniRef = await findDoc(collection(db, "universities"), "name", university);
-        const courseRef = uniRef && (await findDoc(collection(uniRef, "courses"), "name", course));
-        const subjectRef = courseRef && (await findDoc(collection(courseRef, "subjects"), "subtopic", subject));
-
-        if (!subjectRef) {
-            return [];
-        }
-
-        const promptsSnapshot = await getDocs(collection(subjectRef, "prompts"));
-        return promptsSnapshot.docs.map(doc => {
-            const data = doc.data();
-            return {
-                prompt: data.prompt,
-                rating: data.rating
-            };
-        });
-    }
-
-    static async getSubjectAverageRating(university: string, course: string, subject: string) {
-        const prompts = await this.getPrompts(university, course, subject);
-        const averageRating = prompts.reduce((sum, prompt) => sum + prompt.rating, 0) / prompts.length;
-        return averageRating;
-    }
-
-    static async getCourseAverageRating(university: string, course: string) {
-        const subjects = await this.getSubjects(university, course);
-        const subjectAverageRatings = await Promise.all(subjects.map((subject) => this.getSubjectAverageRating(university, course, subject)));
-        const averageRating = subjectAverageRatings.reduce((sum, rating) => sum + rating, 0) / subjectAverageRatings.length;
-        return averageRating;
-    }
-
-    static async getSubjectSummary(university: string, course: string, subject: string) {
-        const prompts = await this.getPrompts(university, course, subject);
-        const prompt = prompts.map((p) => p.prompt).join("\n");
-        const { text } = await generateText({
-            model: openai("gpt-4o"),
-            // system: `You are EduMetrics, an AI built for the benefit of students and universities.
-            // Gather all the prompts under the course. Anaylze where students fall short the most, as well as where the exceed.
-            // Report this data back to the institution/professor that requested it and provide actions that could be taken to
-            // improve students sucess within for the next semster as well as in a few years.`,
-            system: `You are EduMetrics, an AI designed to gather prompts under an academic institutional course.
+  static async getSubjectSummary(university: string, course: string, subject: string) {
+    const prompts = await this.getPrompts(university, course, subject);
+    const prompt = prompts.map((p) => p.prompt).join("\n");
+    const { text } = await generateText({
+      model: openai("gpt-4o"),
+      // system: `You are EduMetrics, an AI built for the benefit of students and universities.
+      // Gather all the prompts under the course. Anaylze where students fall short the most, as well as where the exceed.
+      // Report this data back to the institution/professor that requested it and provide actions that could be taken to
+      // improve students sucess within for the next semster as well as in a few years.`,
+      system: `You are EduMetrics, an AI designed to gather prompts under an academic institutional course.
             You will analyze the prompts and report this data back to the academic institution and its faculty.
-            The report should be written in a way to understand what students are struggling with.`,
-            prompt: prompt,
-        });
-        return text;
-    }
+            The report should indicate to professors which topics students struggle with. Your answer should be
+            in bullet points. Be consice, clear, and coherent.`,
+      prompt: prompt,
+    });
+    return text;
+  }
 
-    static async getCourseSummary(university: string, course: string) {
-        const subjects = await this.getSubjects(university, course);
-        const subjectSummaries = await Promise.all(subjects.map((subject) => this.getSubjectSummary(university, course, subject)));
-        return subjectSummaries.join("\n");
-    }
+  static async getCourseSummary(university: string, course: string) {
+    const subjects = await this.getSubjects(university, course);
+    const subjectSummaries = await Promise.all(
+      subjects.map((subject) => this.getSubjectSummary(university, course, subject))
+    );
+    return subjectSummaries.join("\n");
+  }
 }
 
 // addNewChat({

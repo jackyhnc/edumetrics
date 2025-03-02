@@ -1,204 +1,197 @@
-'use client';
+"use client";
 
-import React, { useState } from 'react';
-import Link from 'next/link';
+import React, { useState, useEffect, useRef, useCallback } from "react";
+import Link from "next/link";
+import { DocumentCourse, EduMetricsAPI } from "@/config/firebase";
+import { TUseSession, useSession } from "@/context";
 
-interface Course {
-  id: string;
-  code: string;
-  name: string;
-  description: string;
-  topics: Topic[];
-}
-
-interface Topic {
-  id: string;
-  title: string;
-  description: string;
-  reviews: Review[];
-}
-
-interface Review {
-  id: string;
-  studentName: string;
-  content: string;
+interface Prompt {
+  prompt: string;
   rating: number;
-  date: string;
-  helpful: number;
 }
-
-// Sample data with AI learning prompts
-const sampleCourses: Course[] = [
-  {
-    id: 'cs-171',
-    code: 'CS 171',
-    name: 'Computer Programming I',
-    description: 'Introduction to Python programming and computer science fundamentals.',
-    topics: [
-      {
-        id: 'python-basics',
-        title: 'Python Basics',
-        description: 'Introduction to Python syntax and programming concepts',
-        reviews: [
-          {
-            id: '1',
-            studentName: 'Jacky Hanc',
-            content: 'Explain Python variables, data types, and basic operations like a teacher explaining to a complete beginner. Include simple examples for each concept.',
-            rating: 5,
-            date: '2024-03-15',
-            helpful: 12
-          },
-          {
-            id: '2',
-            studentName: 'Edison Lin',
-            content: 'Create a step-by-step tutorial on how to write my first Python program that calculates the average of three numbers. Explain each line of code.',
-            rating: 4,
-            date: '2024-03-14',
-            helpful: 8
-          }
-        ]
-      },
-      {
-        id: 'data-structures',
-        title: 'Basic Data Structures',
-        description: 'Lists, dictionaries, and basic data structures in Python',
-        reviews: [
-          {
-            id: '3',
-            studentName: 'Dylan Daniel',
-            content: 'Show me how to use Python lists and dictionaries with practical examples. Include common operations like adding, removing, and searching for elements.',
-            rating: 5,
-            date: '2024-03-13',
-            helpful: 15
-          }
-        ]
-      }
-    ]
-  },
-  {
-    id: 'math-200',
-    code: 'MATH 200',
-    name: 'Multivariate Calculus',
-    description: 'Advanced calculus concepts including multiple variables and vector calculus.',
-    topics: [
-      {
-        id: 'vectors',
-        title: 'Vector Calculus',
-        description: 'Vector operations and calculus in multiple dimensions',
-        reviews: [
-          {
-            id: '4',
-            studentName: 'Dom',
-            content: 'Explain vector fields and their applications in 3D space using real-world examples. Include visualizations and step-by-step calculations.',
-            rating: 4,
-            date: '2024-03-12',
-            helpful: 20
-          }
-        ]
-      },
-      {
-        id: 'multiple-integrals',
-        title: 'Multiple Integrals',
-        description: 'Double and triple integrals in various coordinate systems',
-        reviews: [
-          {
-            id: '5',
-            studentName: 'Jonathan Zheng',
-            content: 'Walk me through solving a double integral problem in polar coordinates. Explain the process of setting up bounds and converting between coordinate systems.',
-            rating: 4,
-            date: '2024-03-11',
-            helpful: 18
-          }
-        ]
-      }
-    ]
-  },
-  {
-    id: 'engl-102',
-    code: 'ENGL 102',
-    name: 'English Composition',
-    description: 'Advanced composition and rhetoric for academic writing.',
-    topics: [
-      {
-        id: 'academic-writing',
-        title: 'Academic Writing',
-        description: 'Principles of academic writing and research',
-        reviews: [
-          {
-            id: '6',
-            studentName: 'Jacky Hanc',
-            content: 'Help me structure a thesis statement for a research paper about climate change. Provide examples of strong vs. weak thesis statements.',
-            rating: 4,
-            date: '2024-03-10',
-            helpful: 25
-          }
-        ]
-      },
-      {
-        id: 'research-methods',
-        title: 'Research Methods',
-        description: 'Research techniques and citation methods',
-        reviews: [
-          {
-            id: '7',
-            studentName: 'Teju Olateju',
-            content: 'Show me how to properly cite academic sources in APA format. Include examples for different types of sources like books, journals, and websites.',
-            rating: 5,
-            date: '2024-03-09',
-            helpful: 22
-          }
-        ]
-      }
-    ]
-  }
-];
 
 export default function CoursesReviewPage() {
-  const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
-  const [selectedTopic, setSelectedTopic] = useState<Topic | null>(null);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [courseType, setCourseType] = useState('all');
-  const [sortBy, setSortBy] = useState('none');
+  const { userData, user } = useSession() as TUseSession;
 
-  const coursesWithStats = sampleCourses.map(course => {
-    const totalReviews = course.topics.reduce((sum, topic) => sum + topic.reviews.length, 0);
-    return { ...course, totalReviews };
+  const [courses, setCourses] = useState<string[]>([]);
+  const [selectedCourse, setSelectedCourse] = useState<DocumentCourse | null>(null);
+  const [topics, setTopics] = useState<string[]>([]);
+  const [selectedTopic, setSelectedTopic] = useState<string>("");
+  const [prompts, setPrompts] = useState<Prompt[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [subjectFilter, setSubjectFilter] = useState("all");
+  const [loading, setLoading] = useState(true);
+  const [dataLoading, setDataLoading] = useState(false);
+
+  // Subject codes for filtering
+  const subjectCodes = ["MATH", "PHYS", "CHEM", "BIO", "CS", "ENG"]; // Add your subject codes here
+
+  // Lazy loading state
+  const [visibleItems, setVisibleItems] = useState(12); // Start with 12 items (4 rows of 3)
+  const [hasMore, setHasMore] = useState(true);
+  const observer = useRef<IntersectionObserver | null>(null);
+  const lastCourseElementRef = useRef<HTMLDivElement | null>(null);
+
+  console.log(user?.email, userData?.university);
+
+  // Reset visible items count when filters change
+  useEffect(() => {
+    setVisibleItems(12);
+    setHasMore(true);
+  }, [searchQuery, subjectFilter]);
+
+  // Generate topics when a course is selected
+  useEffect(() => {
+    if (selectedCourse && userData) {
+      // Fetch topics (subjects) from Firebase
+      const loadTopics = async () => {
+        try {
+          setLoading(true);
+          const subjects = await EduMetricsAPI.getSubjects(userData.university, selectedCourse.course);
+          setTopics(subjects);
+          console.log(subjects);
+        } catch (error) {
+          console.error("Error loading topics:", error);
+          setTopics([]);
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      loadTopics();
+    } else {
+      setTopics([]);
+    }
+  }, [selectedCourse]);
+
+  // Handle course selection
+  const handleCourseClick = (docType: DocumentCourse) => {
+    if (selectedCourse?.course === docType.course) {
+      // If clicking the same course, toggle selection
+      setSelectedCourse(null);
+      setSelectedTopic("");
+    } else {
+      // If clicking a different course
+      setSelectedCourse(docType);
+      setSelectedTopic("");
+    }
+  };
+
+  // Handle topic selection
+  const handleTopicClick = (topic: string) => {
+    setSelectedTopic(selectedTopic === topic ? "" : topic);
+  };
+
+  // Load prompts when a topic is selected
+  useEffect(() => {
+    const loadPrompts = async () => {
+      if (selectedCourse && selectedTopic && userData) {
+        try {
+          setLoading(true);
+          const fetchedPrompts = await EduMetricsAPI.getPrompts(
+            userData.university,
+            selectedCourse.course,
+            selectedTopic
+          );
+          setPrompts(fetchedPrompts);
+          console.log("Fetched prompts:", fetchedPrompts); // Debug log
+        } catch (error) {
+          console.error("Error loading prompts:", error);
+          setPrompts([]);
+        } finally {
+          setLoading(false);
+        }
+      } else {
+        setPrompts([]);
+      }
+    };
+
+    loadPrompts();
+  }, [selectedCourse, selectedTopic]);
+
+  useEffect(() => {
+    if (userData) {
+      EduMetricsAPI.getCourses(userData.university).then(setCourses);
+    }
+  }, [userData]);
+
+  const coursesToDisplay: DocumentCourse[] = courses.map((c) => ({
+    university: userData!.university,
+    course: c,
+  }));
+
+  const filteredCourses = coursesToDisplay.filter((docType) => {
+    const matchesSearch =
+      docType.course.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      docType.description?.toLowerCase().includes(searchQuery.toLowerCase());
+
+    // const matchesSubject = subjectFilter === "all" || course.subjectCode.toLowerCase() === subjectFilter.toLowerCase();
+
+    return matchesSearch /*  && matchesSubject */;
   });
 
-  const filteredCourses = coursesWithStats
-    .filter(course => {
-      const matchesSearch = 
-        course.code.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        course.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        course.description.toLowerCase().includes(searchQuery.toLowerCase());
-      
-      const matchesCourseType = courseType === 'all' || course.code.toLowerCase().startsWith(courseType);
+  // Infinite scroll implementation
+  const lastCourseRef = useCallback(
+    (node: HTMLDivElement) => {
+      if (observer.current) observer.current.disconnect();
 
-      return matchesSearch && matchesCourseType;
-    })
-    .sort((a, b) => {
-      switch (sortBy) {
-        case 'popular':
-          return b.totalReviews - a.totalReviews;
-        default:
-          return 0;
+      observer.current = new IntersectionObserver((entries) => {
+        if (entries[0].isIntersecting && hasMore) {
+          setVisibleItems((prevVisibleItems) => {
+            const newCount = prevVisibleItems + 9; // Load 3 more rows (9 items)
+
+            // Check if we've reached the end of the list
+            if (newCount >= filteredCourses.length) {
+              setHasMore(false);
+            }
+
+            return newCount;
+          });
+        }
+      });
+
+      if (node) {
+        lastCourseElementRef.current = node;
+        observer.current.observe(node);
       }
+    },
+    [hasMore, filteredCourses.length]
+  );
+
+  // Get visible courses
+  const visibleCourses = filteredCourses.slice(0, visibleItems);
+
+  // Group courses into rows for rendering
+  const courseRows = [];
+  const columns = 3; // Number of columns in the grid
+
+  for (let i = 0; i < visibleCourses.length; i += columns) {
+    const rowCourses = visibleCourses.slice(i, i + columns);
+    const rowHasSelectedCourse = rowCourses.some((course) => selectedCourse && course.course === selectedCourse.course);
+
+    courseRows.push({
+      courses: rowCourses,
+      hasSelectedCourse: rowHasSelectedCourse,
+      isLastRow: i + columns >= visibleCourses.length && i + rowCourses.length < filteredCourses.length,
     });
+  }
 
   return (
-    <div className="min-h-screen bg-black text-white">
-      <div className="max-w-6xl mx-auto p-8">
-        <div className="text-center mb-8">
-          <Link href="/" className="text-2xl font-bold text-white hover:text-white/90 transition-colors">
+    <div className="min-h-screen bg-black text-white relative overflow-hidden">
+      {/* Background elements */}
+      <div className="absolute top-1/3 -left-32 w-80 h-80 bg-gradient-to-br from-white via-purple-500 to-purple-900 rounded-full opacity-20 blur-3xl animate-pulse"></div>
+      <div className="absolute bottom-1/3 -right-32 w-80 h-80 bg-gradient-to-br from-black via-purple-600 to-purple-900 rounded-full opacity-20 blur-3xl animate-pulse"></div>
+
+      <div className="max-w-6xl mx-auto p-8 relative z-10">
+        <div className="text-center mb-8 animate-fadeIn">
+          <Link href="/" className="text-2xl font-bold text-white hover:text-purple-300 transition-colors">
             EduMetrics
           </Link>
-          <h2 className="mt-6 text-3xl font-bold">Course Reviews</h2>
-          <p className="mt-2 text-white/70 mb-6">
-            Browse and share course experiences
-          </p>
+          <h2 className="mt-6 text-3xl font-bold">Course Catalog</h2>
+          <p className="mt-2 text-white/70 mb-6">Browse and share course information</p>
         </div>
 
-        <div className="mb-8 space-y-4">
+        <div className="mb-8 space-y-4 animate-fadeIn" style={{ animationDelay: "0.1s" }}>
           <div className="max-w-md mx-auto">
             <div className="relative">
               <input
@@ -206,7 +199,7 @@ export default function CoursesReviewPage() {
                 placeholder="Search courses..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full px-4 py-2 bg-white/10 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-white/30 placeholder-white/50"
+                className="w-full px-4 py-2 bg-white/10 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400 placeholder-white/50 transition-all"
               />
               <svg
                 className="absolute right-3 top-2.5 h-5 w-5 text-white/50"
@@ -223,158 +216,161 @@ export default function CoursesReviewPage() {
               </svg>
             </div>
           </div>
-
-          <div className="flex flex-wrap justify-center gap-4">
-            <select
-              value={courseType}
-              onChange={(e) => setCourseType(e.target.value)}
-              className="px-4 py-2 bg-black text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-white/30 border border-white/20 hover:border-white/40 transition-colors cursor-pointer appearance-none"
-              style={{
-                WebkitAppearance: 'none',
-                MozAppearance: 'none'
-              }}
-            >
-              <option value="all" className="bg-gray-900">All Departments</option>
-              <option value="cs" className="bg-gray-900">Computer Science</option>
-              <option value="math" className="bg-gray-900">Mathematics</option>
-              <option value="engl" className="bg-gray-900">English</option>
-            </select>
-
-            <select
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value)}
-              className="px-4 py-2 bg-black text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-white/30 border border-white/20 hover:border-white/40 transition-colors cursor-pointer appearance-none group relative"
-              style={{
-                WebkitAppearance: 'none',
-                MozAppearance: 'none'
-              }}
-            >
-              <option value="none" className="bg-gray-900">Sort By</option>
-              <option value="popular" className="bg-gray-900">Most Popular</option>
-            </select>
-
-            <style jsx>{`
-              select {
-                background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='white' opacity='0.5'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
-                background-repeat: no-repeat;
-                background-position: right 0.5rem center;
-                background-size: 1.5em 1.5em;
-                padding-right: 2.5rem;
-              }
-              
-              select:focus {
-                background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='white' opacity='0.8'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
-              }
-              
-              option {
-                padding: 0.5rem;
-                margin: 0.25rem;
-              }
-              
-              option:hover {
-                background-color: rgba(255, 255, 255, 0.1);
-              }
-            `}</style>
-          </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredCourses.map((course) => (
-            <button
-              key={course.id}
-              onClick={() => {
-                if (selectedCourse?.id !== course.id) {
-                  setSelectedTopic(null);
-                }
-                setSelectedCourse(course);
-              }}
-              className={`p-6 rounded-lg text-left transition-colors ${
-                selectedCourse?.id === course.id
-                  ? 'bg-white/20 text-white'
-                  : 'bg-white/10 hover:bg-white/15'
-              }`}
-            >
-              <h3 className="text-xl font-semibold mb-2">{course.code}</h3>
-              <h4 className="text-lg mb-2">{course.name}</h4>
-              <p className="text-white/70 text-sm">{course.description}</p>
-            </button>
-          ))}
-        </div>
-
-        {selectedCourse && (
-          <div className="mt-8">
-            <h3 className="text-2xl font-bold mb-4">Topics for {selectedCourse.code}</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {selectedCourse.topics.map((topic) => (
-                <button
-                  key={topic.id}
-                  onClick={() => setSelectedTopic(topic)}
-                  className={`p-4 rounded-lg text-left transition-colors ${
-                    selectedTopic?.id === topic.id
-                      ? 'bg-white/20 text-white'
-                      : 'bg-white/10 hover:bg-white/15'
-                  }`}
-                >
-                  <h4 className="text-lg font-semibold mb-2">{topic.title}</h4>
-                  <p className="text-white/70 text-sm mb-2">{topic.description}</p>
-                  <div className="text-sm text-white/50">
-                    {topic.reviews.length} {topic.reviews.length === 1 ? 'prompt' : 'prompts'}
-                  </div>
-                </button>
-              ))}
+        {dataLoading ? (
+          <div className="flex justify-center items-center py-12">
+            <div className="relative w-16 h-16">
+              <div className="absolute inset-0 border-4 border-transparent border-t-white rounded-full animate-spin"></div>
+              <div className="absolute inset-0 border-4 border-transparent border-b-purple-400 rounded-full animate-spin-slow"></div>
+              <div className="absolute inset-0 border-4 border-transparent border-l-purple-500 rounded-full animate-spin-reverse"></div>
             </div>
           </div>
-        )}
+        ) : (
+          <div className="space-y-6">
+            {courseRows.map((row, rowIndex) => (
+              <React.Fragment key={`row-${rowIndex}`}>
+                {/* Course row */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {row.courses.map((course, courseIndex) => {
+                    // Determine if this is the last visible course
+                    const isLastCourse = row.isLastRow && courseIndex === row.courses.length - 1;
+                    const isSelected = selectedCourse?.course === course.course;
 
-        {selectedTopic && (
-          <div className="mt-8">
-            <div className="flex justify-between items-center mb-6">
-              <h3 className="text-2xl font-bold">Learning Prompts for {selectedTopic.title}</h3>
-              <button className="px-4 py-2 bg-white/10 hover:bg-white/15 rounded-lg transition-colors">
-                Add Prompt
-              </button>
-            </div>
-            <div className="space-y-6">
-              {selectedTopic.reviews.map((review) => (
-                <div key={review.id} className="bg-white/10 rounded-lg p-6">
-                  <div className="flex justify-between items-start mb-4">
-                    <div>
-                      <div className="flex items-center space-x-2">
-                        <span className="font-medium">{review.studentName}</span>
-                        <div className="flex items-center bg-white/20 px-2 py-1 rounded">
-                          <svg
-                            className="w-4 h-4 text-yellow-400 mr-1"
-                            fill="currentColor"
-                            viewBox="0 0 20 20"
+                    return (
+                      <div
+                        key={`${course.university}-${course.course}`}
+                        ref={isLastCourse ? lastCourseRef : null}
+                        className={`rounded-lg overflow-hidden transition-all duration-300 hover-scale shadow-lg ${
+                          isSelected
+                            ? "bg-white/20 text-white shadow-purple-500/30"
+                            : "bg-white/10 hover:bg-white/15 hover:shadow-purple-500/20"
+                        } animate-fadeIn`}
+                        style={{ animationDelay: `${0.05 * (rowIndex * columns + courseIndex)}s` }}
+                      >
+                        <button onClick={() => handleCourseClick(course)} className="p-6 w-full text-left">
+                          <h3 className="text-xl font-semibold mb-2">{course.course}</h3>
+                          {course.description && <p className="text-white/70 mb-2">{course.description}</p>}
+                          <div className="flex justify-between text-sm text-white/50">
+                            <span>{course.credits ?? "N/A"} credits</span>
+                            <span>
+                              {course.sections ?? 1} section{(course.sections ?? 1) !== 1 ? "s" : ""}
+                            </span>
+                          </div>
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Topics dropdown for this row if it contains the selected course */}
+                {row.hasSelectedCourse && selectedCourse && (
+                  <div className="mt-2 mb-4">
+                    {/* Topics section */}
+                    <div className="bg-white/10 rounded-lg p-6 w-full shadow-lg shadow-purple-500/20 transition-all">
+                      <h4 className="text-lg font-medium text-purple-300 mb-4">Topics for {selectedCourse.course}</h4>
+
+                      {loading ? (
+                        <div className="flex justify-center items-center py-6">
+                          <div className="relative w-10 h-10">
+                            <div className="absolute inset-0 border-3 border-transparent border-t-white rounded-full animate-spin"></div>
+                            <div className="absolute inset-0 border-3 border-transparent border-b-purple-400 rounded-full animate-spin-slow"></div>
+                          </div>
+                        </div>
+                      ) : topics.length > 0 ? (
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                          {topics.map((topic) => (
+                            <div
+                              key={topic}
+                              className={`p-4 rounded-md text-left transition-all duration-200 cursor-pointer hover-scale ${
+                                selectedTopic === topic
+                                  ? "bg-white/20 text-white shadow-lg shadow-purple-500/30"
+                                  : "bg-white/10 hover:bg-white/15 text-white/80 hover:shadow-purple-500/20"
+                              }`}
+                              onClick={() => handleTopicClick(topic)}
+                            >
+                              {topic}
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-center py-4 text-white/70">No topics available for this course.</div>
+                      )}
+
+                      {topics.length > 0 && (
+                        <div className="mt-6 flex justify-center">
+                          <Link
+                            href={`/AISummary?${
+                              selectedCourse
+                                ? `courseName=${encodeURIComponent(
+                                    selectedCourse.course
+                                  )}&courseDescription=${encodeURIComponent(selectedCourse.description || "")}${
+                                    selectedTopic ? `&topic=${encodeURIComponent(selectedTopic)}` : ""
+                                  }${
+                                    prompts.length > 0 ? `&prompts=${encodeURIComponent(JSON.stringify(prompts))}` : ""
+                                  }`
+                                : ""
+                            }`}
+                            className="px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-all shadow-lg hover:shadow-purple-500/30 hover-scale"
                           >
-                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                          </svg>
-                          <span>Effectiveness: {review.rating}</span>
+                            Data, Analytics, and AI Review
+                          </Link>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Learning prompts section - shown when a topic is selected */}
+                    {selectedTopic && (
+                      <div className="mt-4">
+                        <div className="bg-white/10 rounded-lg p-6 w-full shadow-lg shadow-purple-500/20 transition-all">
+                          <div className="mb-6">
+                            <h3 className="text-xl font-bold text-purple-300">Learning Prompts for {selectedTopic}</h3>
+                          </div>
+
+                          {loading ? (
+                            <div className="flex justify-center items-center py-6">
+                              <div className="relative w-10 h-10">
+                                <div className="absolute inset-0 border-3 border-transparent border-t-white rounded-full animate-spin"></div>
+                                <div className="absolute inset-0 border-3 border-transparent border-b-purple-400 rounded-full animate-spin-slow"></div>
+                              </div>
+                            </div>
+                          ) : prompts.length > 0 ? (
+                            <div className="space-y-6">
+                              {prompts.map((prompt, index) => (
+                                <div
+                                  key={index}
+                                  className="bg-white/15 rounded-lg p-6 hover:bg-white/20 transition-all hover-scale shadow-md hover:shadow-purple-500/20"
+                                >
+                                  <p className="text-white/90">{prompt.prompt}</p>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <div className="text-center py-4 text-white/70">No prompts available for this topic.</div>
+                          )}
                         </div>
                       </div>
-                      <p className="text-sm text-white/50 mt-1">{review.date}</p>
-                    </div>
-                    <button className="flex items-center text-sm text-white/70 hover:text-white transition-colors">
-                      <svg
-                        className="w-4 h-4 mr-1"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5"
-                        />
-                      </svg>
-                      Found Helpful: {review.helpful}
-                    </button>
+                    )}
                   </div>
-                  <p className="text-white/90">{review.content}</p>
+                )}
+              </React.Fragment>
+            ))}
+
+            {/* Loading indicator for infinite scroll */}
+            {hasMore && visibleCourses.length > 0 && filteredCourses.length > visibleCourses.length && (
+              <div className="flex justify-center py-4">
+                <div className="relative w-10 h-10">
+                  <div className="absolute inset-0 border-3 border-transparent border-t-white rounded-full animate-spin"></div>
+                  <div className="absolute inset-0 border-3 border-transparent border-b-purple-400 rounded-full animate-spin-slow"></div>
                 </div>
-              ))}
-            </div>
+              </div>
+            )}
+
+            {filteredCourses.length === 0 && (
+              <div className="text-center py-12 text-white/70 animate-fadeIn">
+                No courses found matching your search criteria.
+              </div>
+            )}
           </div>
         )}
       </div>
