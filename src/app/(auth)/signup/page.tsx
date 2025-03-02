@@ -29,7 +29,7 @@ export default function SignUp() {
   const [searchLoading, setSearchLoading] = useState(false);
   const [userRole, setUserRole] = useState<UserRole>("student");
 
-  const { handleSignup } = useSession() as TUseSession
+  const { handleSignup } = useSession() as TUseSession;
   const router = useRouter();
 
   const searchColleges = async (query: string) => {
@@ -144,7 +144,7 @@ export default function SignUp() {
     }
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    
+
     if (!emailRegex.test(email)) {
       setError("Please enter a valid email address.");
       setLoading(false);
@@ -152,22 +152,22 @@ export default function SignUp() {
     }
 
     if (password.length < 8 || !/[A-Za-z]/.test(password) || !/[!@#$%^&*]/.test(password)) {
-      setError("Password must be at least 8 characters long and include at least one letter and one special character.");
+      setError(
+        "Password must be at least 8 characters long and include at least one letter and one special character."
+      );
       setLoading(false);
       return;
     }
 
     try {
       const user = await handleSignup(email, password, userRole, selectedCollege.name);
-      console.log(user)
-      if (user && (userRole === "faculty")) {
-        router.push("/courseReview")
+      console.log("USER:", user);
+      if (user && userRole === "faculty") {
+        router.push("/courseReview");
       } else if (user && userRole === "student") {
         router.push("/chatbot");
       } else {
-        setError(
-          "Error creating account. Could have been made already."
-        );
+        setError("Error creating account. Could have been made already.");
       }
     } catch (err) {
       setError("An error occurred during signup.");

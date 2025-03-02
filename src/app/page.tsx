@@ -4,6 +4,8 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
+
+
 export default function LandingPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
@@ -76,7 +78,7 @@ export default function LandingPage() {
 
       <div className="absolute top-1/3 -left-32 w-80 h-80 bg-gradient-to-br from-white via-purple-500 to-purple-900 rounded-full opacity-30 blur-3xl animate-pulse"></div>
       <div className="absolute bottom-1/3 -right-32 w-80 h-80 bg-gradient-to-br from-black via-purple-600 to-purple-900 rounded-full opacity-30 blur-3xl animate-pulse"></div>
-      
+
       <style jsx>{`
         @keyframes fadeIn {
           from { opacity: 0; }
