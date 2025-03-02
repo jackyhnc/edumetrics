@@ -4,7 +4,6 @@ EduMetrics - Unlock Student Success with Data-Driven Tutoring
 
 EduMetrics is an intelligent tutoring AI that helps students master difficult subjects while providing real-time insights to universities. By tracking learning patterns and pinpointing struggles, we aim to deliver personalized support and data-driven feedback to improve student outcomes and university curricula.
 
-@@ -8,26 +8,40 @@
 
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
@@ -48,7 +47,12 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
 4. Run the development server:
 
 ```bash
-@@ -50,11 +56,7 @@ pnpm dev
+npm run dev
+# or
+yarn dev
+# or
+pnpm dev
+# or
 bun dev
 ```
 5. Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
