@@ -2,8 +2,7 @@
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
-import { EduMetricsAPI } from "@/config/firebase";
-import { useCourseData, getSampleCourses, ParsedCourse } from "@/utils/courseParser";
+import { DocumentCourse, EduMetricsAPI } from "@/config/firebase";
 import { TUseSession, useSession } from "@/context";
 
 interface Prompt {
@@ -12,30 +11,26 @@ interface Prompt {
 }
 
 export default function CoursesReviewPage() {
-  const { courses, subjectCodes, loading: dataLoading, error } = useCourseData();
-
   const { userData, user } = useSession() as TUseSession;
 
-  const [selectedCourse, setSelectedCourse] = useState<ParsedCourse | null>(null);
+  const [courses, setCourses] = useState<string[]>([]);
+  const [selectedCourse, setSelectedCourse] = useState<DocumentCourse | null>(null);
   const [topics, setTopics] = useState<string[]>([]);
   const [selectedTopic, setSelectedTopic] = useState<string>("");
   const [prompts, setPrompts] = useState<Prompt[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [subjectFilter, setSubjectFilter] = useState("all");
-  const [sortBy, setSortBy] = useState("none");
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [dataLoading, setDataLoading] = useState(false);
+
+  // Subject codes for filtering
+  const subjectCodes = ["MATH", "PHYS", "CHEM", "BIO", "CS", "ENG"]; // Add your subject codes here
 
   // Lazy loading state
   const [visibleItems, setVisibleItems] = useState(12); // Start with 12 items (4 rows of 3)
   const [hasMore, setHasMore] = useState(true);
   const observer = useRef<IntersectionObserver | null>(null);
   const lastCourseElementRef = useRef<HTMLDivElement | null>(null);
-
-  useEffect(() => {
-    if (error) {
-      console.error("Error loading courses, using sample data:", error);
-    }
-  }, [error]);
 
   console.log(user?.email, userData?.university);
 
@@ -52,9 +47,9 @@ export default function CoursesReviewPage() {
       const loadTopics = async () => {
         try {
           setLoading(true);
-          // Using hardcoded university name for now
-          const subjects = await EduMetricsAPI.getSubjects(userData.university, selectedCourse.name);
+          const subjects = await EduMetricsAPI.getSubjects(userData.university, selectedCourse.course);
           setTopics(subjects);
+          console.log(subjects);
         } catch (error) {
           console.error("Error loading topics:", error);
           setTopics([]);
@@ -70,14 +65,14 @@ export default function CoursesReviewPage() {
   }, [selectedCourse]);
 
   // Handle course selection
-  const handleCourseClick = (course: ParsedCourse) => {
-    if (selectedCourse?.id === course.id) {
+  const handleCourseClick = (docType: DocumentCourse) => {
+    if (selectedCourse?.course === docType.course) {
       // If clicking the same course, toggle selection
       setSelectedCourse(null);
       setSelectedTopic("");
     } else {
       // If clicking a different course
-      setSelectedCourse(course);
+      setSelectedCourse(docType);
       setSelectedTopic("");
     }
   };
@@ -90,11 +85,14 @@ export default function CoursesReviewPage() {
   // Load prompts when a topic is selected
   useEffect(() => {
     const loadPrompts = async () => {
-      if (selectedCourse && selectedTopic) {
+      if (selectedCourse && selectedTopic && userData) {
         try {
           setLoading(true);
-          const university = "Drexel"; // Using hardcoded university name
-          const fetchedPrompts = await EduMetricsAPI.getPrompts(university, selectedCourse.name, selectedTopic);
+          const fetchedPrompts = await EduMetricsAPI.getPrompts(
+            userData.university,
+            selectedCourse.course,
+            selectedTopic
+          );
           setPrompts(fetchedPrompts);
           console.log("Fetched prompts:", fetchedPrompts); // Debug log
         } catch (error) {
@@ -111,16 +109,25 @@ export default function CoursesReviewPage() {
     loadPrompts();
   }, [selectedCourse, selectedTopic]);
 
-  const coursesToDisplay = error ? getSampleCourses() : courses;
+  useEffect(() => {
+    if (userData) {
+      EduMetricsAPI.getCourses(userData.university).then(setCourses);
+    }
+  }, [userData]);
 
-  const filteredCourses = coursesToDisplay.filter((course) => {
+  const coursesToDisplay: DocumentCourse[] = courses.map((c) => ({
+    university: userData!.university,
+    course: c,
+  }));
+
+  const filteredCourses = coursesToDisplay.filter((docType) => {
     const matchesSearch =
-      course.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      course.title.toLowerCase().includes(searchQuery.toLowerCase());
+      docType.course.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      docType.description?.toLowerCase().includes(searchQuery.toLowerCase());
 
-    const matchesSubject = subjectFilter === "all" || course.subjectCode.toLowerCase() === subjectFilter.toLowerCase();
+    // const matchesSubject = subjectFilter === "all" || course.subjectCode.toLowerCase() === subjectFilter.toLowerCase();
 
-    return matchesSearch && matchesSubject;
+    return matchesSearch /*  && matchesSubject */;
   });
 
   // Infinite scroll implementation
@@ -154,14 +161,13 @@ export default function CoursesReviewPage() {
   // Get visible courses
   const visibleCourses = filteredCourses.slice(0, visibleItems);
 
-
   // Group courses into rows for rendering
   const courseRows = [];
   const columns = 3; // Number of columns in the grid
 
   for (let i = 0; i < visibleCourses.length; i += columns) {
     const rowCourses = visibleCourses.slice(i, i + columns);
-    const rowHasSelectedCourse = rowCourses.some((course) => selectedCourse && course.id === selectedCourse.id);
+    const rowHasSelectedCourse = rowCourses.some((course) => selectedCourse && course.course === selectedCourse.course);
 
     courseRows.push({
       courses: rowCourses,
@@ -224,7 +230,7 @@ export default function CoursesReviewPage() {
               <option value="all" className="bg-gray-900">
                 All Departments
               </option>
-              {subjectCodes.map((code) => (
+              {subjectCodes.map((code: string) => (
                 <option key={code} value={code} className="bg-gray-900">
                   {code}
                 </option>
@@ -341,11 +347,11 @@ export default function CoursesReviewPage() {
                   {row.courses.map((course, courseIndex) => {
                     // Determine if this is the last visible course
                     const isLastCourse = row.isLastRow && courseIndex === row.courses.length - 1;
-                    const isSelected = selectedCourse?.id === course.id;
+                    const isSelected = selectedCourse?.course === course.course;
 
                     return (
                       <div
-                        key={course.id}
+                        key={`${course.university}-${course.course}`}
                         ref={isLastCourse ? lastCourseRef : null}
                         className={`rounded-lg overflow-hidden transition-all duration-300 hover-scale shadow-lg ${
                           isSelected
@@ -355,12 +361,12 @@ export default function CoursesReviewPage() {
                         style={{ animationDelay: `${0.05 * (rowIndex * columns + courseIndex)}s` }}
                       >
                         <button onClick={() => handleCourseClick(course)} className="p-6 w-full text-left">
-                          <h3 className="text-xl font-semibold mb-2">{course.name}</h3>
-                          <p className="text-white/70 mb-2">{course.title}</p>
+                          <h3 className="text-xl font-semibold mb-2">{course.course}</h3>
+                          {course.description && <p className="text-white/70 mb-2">{course.description}</p>}
                           <div className="flex justify-between text-sm text-white/50">
-                            <span>{course.credits} credits</span>
+                            <span>{course.credits ?? "N/A"} credits</span>
                             <span>
-                              {course.crns.length} section{course.crns.length !== 1 ? "s" : ""}
+                              {course.sections ?? 1} section{(course.sections ?? 1) !== 1 ? "s" : ""}
                             </span>
                           </div>
                         </button>
@@ -374,7 +380,7 @@ export default function CoursesReviewPage() {
                   <div className="mt-2 mb-4">
                     {/* Topics section */}
                     <div className="bg-white/10 rounded-lg p-6 w-full shadow-lg shadow-purple-500/20 transition-all">
-                      <h4 className="text-lg font-medium text-purple-300 mb-4">Topics for {selectedCourse.name}</h4>
+                      <h4 className="text-lg font-medium text-purple-300 mb-4">Topics for {selectedCourse.course}</h4>
 
                       {loading ? (
                         <div className="flex justify-center items-center py-6">
@@ -409,8 +415,8 @@ export default function CoursesReviewPage() {
                             href={`/AISummary?${
                               selectedCourse
                                 ? `courseName=${encodeURIComponent(
-                                    selectedCourse.name
-                                  )}&courseTitle=${encodeURIComponent(selectedCourse.title)}${
+                                    selectedCourse.course
+                                  )}&courseDescription=${encodeURIComponent(selectedCourse.description || "")}${
                                     selectedTopic ? `&topic=${encodeURIComponent(selectedTopic)}` : ""
                                   }${
                                     prompts.length > 0 ? `&prompts=${encodeURIComponent(JSON.stringify(prompts))}` : ""

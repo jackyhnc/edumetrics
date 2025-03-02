@@ -15,14 +15,14 @@ const processContent = (content: string) => {
     const bullet = indentLevel === 0 ? '•' : indentLevel === 1 ? '◦' : '•';
     return `${p1}${bullet} `;
   });
-  
+
   // Remove extra line breaks, replacing double or more newlines with a single one
-  content = content.replace(/\n{2,}/g, '\n'); 
+  content = content.replace(/\n{2,}/g, '\n');
 
   content = content.replace(/\\\[/g, '$$').replace(/\\\]/g, '$$');
 
   // Wrap standalone LaTeX expressions (e.g., \frac, \pm) with $ for inline math
-  content = content.replace(/\\\((.*?)\\\)/g, '$$$1$$'); // Inline math 
+  content = content.replace(/\\\((.*?)\\\)/g, '$$$1$$'); // Inline math
 
   return content;
 };
@@ -32,7 +32,7 @@ function parseMarkdownIntoBlocks(markdown: string): string[] {
   return tokens.map(token => token.raw);
 }
 
-const MemoizedMarkdownBlock = memo(
+export const MemoizedMarkdownBlock = memo(
   ({ content }: { content: string }) => {
     return (
       <ReactMarkdown

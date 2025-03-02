@@ -13,20 +13,24 @@ import {
 import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 import { generateText, UIMessage } from "ai";
-import { openai } from "@ai-sdk/openai";
+import { createOpenAI } from "@ai-sdk/openai";
 import firebaseConfig from "./firebase.json";
+
+const openai = createOpenAI({
+  apiKey: process.env.NEXT_PUBLIC_OPENAI_API_KEY,
+});
 
 const app = initializeApp(firebaseConfig);
 export const db = getFirestore(app);
 export const auth = getAuth(app);
 
-interface DocumentUser {
+export interface DocumentUser {
   email: string;
   university: string;
   role: string;
 }
 
-interface DocumentCourse {
+export interface DocumentCourse {
   university: string;
   course: string;
   description?: string;
@@ -34,7 +38,7 @@ interface DocumentCourse {
   sections?: number;
 }
 
-interface DocumentPrompt extends DocumentCourse {
+export interface DocumentPrompt extends DocumentCourse {
   subtopic: string;
   prompt: string;
   rating: number;
@@ -155,7 +159,7 @@ export class EduMetricsAPI {
   }
 
   // Get all courses listed under selected university
-  static async getCourses(university: string) {
+  static async getCourses(university: string): Promise<string[]> {
     const docRef = await findDoc(collection(db, "universities"), "name", university);
 
     if (!docRef) {
@@ -222,7 +226,8 @@ export class EduMetricsAPI {
       // improve students sucess within for the next semster as well as in a few years.`,
       system: `You are EduMetrics, an AI designed to gather prompts under an academic institutional course.
             You will analyze the prompts and report this data back to the academic institution and its faculty.
-            The report should be written in a way to understand what students are struggling with.`,
+            The report should indicate to professors which topics students struggle with. Your answer should be
+            in bullet points. Be consice, clear, and coherent.`,
       prompt: prompt,
     });
     return text;
