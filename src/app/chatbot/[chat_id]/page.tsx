@@ -148,7 +148,7 @@ export default function ChatbotPage() {
   return (
     <>
       {chatData ?
-        <div className="h-14 sticky top-0 z-100 mb-6 text-xl bg-gray-100 flex items-center justify-center">
+        <div className="h-14 sticky top-0 z-100 mb-6 text-xl bg-black flex items-center justify-center">
           {`${chatData} (${course})`}
         </div>
         :
@@ -170,7 +170,7 @@ export default function ChatbotPage() {
                   <div className="prose space-y-2">
                     {message.role === "user" ? (
                       <div className="w-full flex justify-end">
-                        <div className="bg-gray-100 text-right p-3 rounded-xl w-fit">{message.content}</div>
+                        <div className="bg-gray-800 text-right p-3 rounded-xl w-fit">{message.content}</div>
                       </div>
                     ) : (
                       <MemoizedMarkdown id={message.id} content={message.content} />
@@ -195,7 +195,7 @@ export default function ChatbotPage() {
                         <div
                           id="d"
                           key={d}
-                          className="rounded-md p-2 bg-gray-700 hover:cursor-pointer text-white"
+                          className="rounded-md p-2 bg-gray-600 hover:cursor-pointer text-white"
                           onClick={() => setChoosingCourse("")}
                         >
                           {d}
@@ -206,7 +206,7 @@ export default function ChatbotPage() {
                         <div
                           id="d"
                           key={d}
-                          className="rounded-md p-2 bg-gray-100 hover:bg-gray-200 hover:cursor-pointer"
+                          className="rounded-md p-2 bg-gray-400 hover:bg-gray-600 hover:cursor-pointer"
                           onClick={() => setChoosingCourse(d)}
                         >
                           {d}
@@ -245,11 +245,11 @@ export default function ChatbotPage() {
               <div className="w-full flex justify-end">
                 <button
                   onClick={() => setCourse(choosingCourse)}
-                  className="bg-black text-white w-fit p-3 px-12 cursor-pointer rounded-md mt-24"
+                  className="bg-purple-800 text-white w-fit p-3 px-12 cursor-pointer rounded-md mt-24"
                   style={
                     !choosingCourse
                       ? {
-                          background: "grey",
+                          background: "darkgrey",
                           cursor: "not-allowed",
                         }
                       : {}
@@ -272,7 +272,7 @@ const MessageInput = ({ isDisabled }: { isDisabled: boolean; course: any }) => {
   return (
     <form onSubmit={handleSubmit}>
       <input
-        className="fixed bottom-0 w-full max-w-xl p-4 mb-8 dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-800 rounded-lg shadow-xl bg-white"
+        className="fixed bottom-0 w-full max-w-xl p-4 mb-8 dark:bg-zinc-900 border-purple-800 border dark:border-zinc-800 rounded-lg shadow-xl bg-gray-800"
         placeholder="Ask me anything"
         value={input}
         onChange={handleInputChange}
