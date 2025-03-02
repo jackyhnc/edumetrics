@@ -6,8 +6,8 @@ import { TChat, TUseSession, useSession } from '@/context';
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { v4 } from 'uuid';
-import { arrayUnion, doc, setDoc } from 'firebase/firestore';
-import { db } from '@/config/firebase';
+import { arrayUnion, collection, doc, getDoc, getDocs, query, setDoc, where } from 'firebase/firestore';
+import { addNewChat, addPrompt, db } from '@/config/firebase';
 import { generateText } from "ai"
 import { openai } from "@ai-sdk/openai"
 import { generateObject } from 'ai';
@@ -17,14 +17,15 @@ export default function ChatbotPage() {
   const router = useRouter();
   const { chat_id } = useParams<{ chat_id: string }>() || { chat_id: '' };
   const { userData, user } = useSession() as TUseSession;
-  const data = ["engl", "math", "physics"]
 
   const [choosingCourse, setChoosingCourse] = useState("")
   const [course, setCourse] = useState<string | undefined>(undefined)
   const [newCourse, setNewCourse] = useState<string | undefined>(undefined)
   const [addCourseError, setAddCourseError] = useState<string>("")
 
-  
+  useEffect(() => {
+    console.log(course)
+  },[course])
   const [chatData, setChatData] = useState<TChat | undefined>(undefined)
 
   useEffect(() => {
@@ -39,46 +40,44 @@ export default function ChatbotPage() {
     id: 'chat',
     // Throttle the messages and data updates to 50ms:
     experimental_throttle: 50,
-    async onFinish(message) {
-      if (messages.length === 1 || messages.length % 5 === 0) {
-        return
-      }
-
-      const { object } = await generateObject({
-        model: openai("4o-mini"),
-        schema: z.object({
-          subjects: z.array(z.string()),
-        }),
-        prompt: `Output a list of subjects from ${userData?.courses} that is from the users prompt: ${message}`
-      });
-      console.log("-----------")
-      console.log(object)
-    }
   });
 
   useEffect(() => {
-    if (messages.length > 0) {
-      try {
-        /*
-        const chatDoc = doc(db, "users", user?.email, "chats", chat_id);
-
-        const newChatDoc = {
-          ...chatDoc,
-
-        }
-        
-        await setDoc(chatDoc, {
-          messages: messages,
-          userId: userData?.id, // Assuming userData has an id field
-          createdAt: new Date(),
+    async function update() {
+      if ((messages.length === 2 || messages.length % 6 === 0) && status === "ready") {
+        const messageContent = messages[messages.length-2].content
+        const { object } = await generateObject({
+          model: openai("4o-mini"),
+          schema: z.object({
+            subtopic: z.string(),
+            name: z.string()
+          }),
+          prompt: `Output a list of main subject and name from ${userData?.courses} that is from the users prompt: ${messageContent}`
         });
-        console.log("Chat saved successfully!");
-        */
-        //for bylan leo danis
-      } catch (error) {
-        console.error("Error saving chat: ", error);
+        console.log("-----------")
+        console.log(object)
+  
+        if (!course) {
+          return
+        }
+        console.log(object)
+
+        const response = addPrompt({
+          university: userData!.university,
+          course: course,
+          subtopic: object.subtopic,
+          prompt: messageContent,
+          rating: 0, //nonthing for now
+        })
+        console.log(1)
+  
+  
+  
+        return
       }
     }
+    update()
+
   },[messages])
 
   const handleAddCourse = async (course: string | undefined) => {
@@ -97,17 +96,19 @@ export default function ChatbotPage() {
       return
     }
 
-    const userRef = doc(db, "users", user?.email);
-    await setDoc(userRef, {
-      courses: arrayUnion(course),
-    }, { merge: true });
-
-
-    setNewCourse(undefined)
+    const userQuery = query(collection(db, "users"), where("email", "==", user?.email));
+    const userSnapshot = await getDocs(userQuery);
+    if (!userSnapshot.empty) {
+      const userDoc = userSnapshot.docs[0];
+      await setDoc(userDoc.ref, {
+        courses: arrayUnion(course),
+      }, { merge: true });
+      setNewCourse(undefined)
+    }
   }
 
   return (
-    <div className="flex flex-col w-full max-w-3xl px-24 py-14 mx-auto stretch">
+    <div className="flex flex-col w-full max-w-3xl px-24 py-14 mb-18 mx-auto stretch">
       {
         (course && course.length > 0) ?
         <>
@@ -115,7 +116,7 @@ export default function ChatbotPage() {
             {messages.length == 0 &&
               <div className="size-full pt-30 flex justify-center items-center flex-col space-y-2">
                 <div className="text-4xl font-bold">What do you want to learn?</div>
-                <div className="text-gray-600">{course}</div>
+                <div className="text-gray-800">{course}</div>
               </div>
             }
             {messages.map(message => (
@@ -141,12 +142,12 @@ export default function ChatbotPage() {
                 <div className="text-4xl font-bold text-center">Which course do you need help on?</div>
               </div>
               <div className="flex justify-center gap-2">
-                {data.map((d) => {
+                {userData?.courses.map((d) => {
                   if (choosingCourse === d) {
                     return (
                       <div id='d' key={d}
                       className="rounded-md p-2 bg-gray-700 hover:cursor-pointer text-white"
-                      onClick={() => setChoosingCourse(d)}
+                      onClick={() => setChoosingCourse("")}
                     >{d}</div>
                     )
                   } else {
@@ -176,7 +177,6 @@ export default function ChatbotPage() {
                 <button className='bg-black text-white p-3 cursor-pointer rounded-md w-36'
                   onClick={() => {
                     handleAddCourse(newCourse); // Pass the new course to the handler
-                    setNewCourse(undefined); // Clear the input after adding
                   }}
                 >
                   Add Course
@@ -190,6 +190,11 @@ export default function ChatbotPage() {
               <button 
                 onClick={() => setCourse(choosingCourse)} 
                 className="bg-black text-white w-fit p-3 px-12 cursor-pointer rounded-md mt-24"
+                style={!choosingCourse ? {
+                  background: "grey",
+                  cursor: "not-allowed",                  
+                }: {}}
+                disabled={!choosingCourse}
               >
                 Create Chat
               </button>

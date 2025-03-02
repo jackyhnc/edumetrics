@@ -2,9 +2,9 @@
 
 
 import { createUserWithEmailAndPassword, onAuthStateChanged, signInWithEmailAndPassword, signOut, User, UserCredential } from "firebase/auth";
-import { doc, onSnapshot, setDoc } from "firebase/firestore";
+import { collection, doc, onSnapshot, query, setDoc, where } from "firebase/firestore";
 import { createContext, useContext, useEffect, useState } from "react";
-import { auth, db } from "@/config/firebase";
+import { addNewUser, auth, db } from "@/config/firebase";
 
 const AuthContext = createContext({});
 
@@ -30,22 +30,25 @@ export function SessionProvided(props: { children: React.ReactNode }) {
       setUserData(undefined)
       return
     }
+    
 
-    const userDocRef = doc(db, "users", user.email!);
+    const userDocRef = query(collection(db, "users"), where("email", "==", user.email!));
 
     const unsubscribe = onSnapshot(userDocRef, async (snapshot) => {
-      const userSnapData = snapshot.data();
+      const userSnapData = snapshot.docs[0]?.data();
+      console.log(userSnapData)
       const userDoc: TUser = {
         chats: userSnapData?.chats,
         role: userSnapData?.role,
         courses: userSnapData?.courses,
+        university: userSnapData?.university,
       }
       setUserData(userDoc)
     });
     return () => unsubscribe();
   }, [user]);
 
-  const handleSignup = async (email: string, password: string) => {
+  const handleSignup = async (email: string, password: string, role: "faculty" | "student", selectedCollege: string) => {
     const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     const passwordPattern = /^(?=.*[0-9])(?=.*[!@#$%^&*])[A-Za-z\d!@#$%^&*]{8,}$/;
 
@@ -61,11 +64,10 @@ export function SessionProvided(props: { children: React.ReactNode }) {
 
     try {
       const response = await createUserWithEmailAndPassword(auth, email, password);
-      const newUser = response?.user
-
-      const userRef = doc(db, "users", newUser.email!);
-      await setDoc(userRef, {
-        isOnboarded: false,
+      addNewUser({
+        university: selectedCollege,
+        role: role,
+        email: email,
       });
 
       return response?.user;
@@ -91,19 +93,18 @@ export function SessionProvided(props: { children: React.ReactNode }) {
 
   return (
     <AuthContext.Provider value={{ user, userData, isLoading, handleLogin, handleLogout, handleSignup }}>
-
       {props.children}
     </AuthContext.Provider>
   )
 }
 
 export type TUseSession = {
-  user: User | null,
-  isLoading: Boolean,
-  login: (email: string, password: string) => Promise<UserCredential | undefined>
-  signup: (email: string, password: string) => Promise<UserCredential | undefined>
-  logout: () => {}
-  userData: TUser | null,
+  user: User | null;
+  isLoading: boolean;
+  handleLogin: (email: string, password: string) => Promise<UserCredential | undefined>;
+  handleSignup: (email: string, password: string, role: "faculty" | "student", selectedCollege: string) => Promise<UserCredential | undefined>;
+  handleLogout: () => Promise<void>;
+  userData: TUser | null;
 }
 
 export type TChat = {
@@ -119,5 +120,6 @@ export type TChat = {
 export type TUser = {
   chats: TChat[];
   role: "student" | "faculty";
-  courses: string[]
+  courses: string[],
+  university: string,
 };

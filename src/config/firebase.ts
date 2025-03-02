@@ -76,8 +76,10 @@ export async function addNewUser(docInfo: DocumentUser) {
   const usersRef = collection(db, "users");
 
   return await findOrCreateDoc(usersRef, "email", docInfo.email, {
-    university: docInfo.university,
+    chats: [],
     role: docInfo.role,
+    courses: [],
+    university: docInfo.university,
   });
 }
 

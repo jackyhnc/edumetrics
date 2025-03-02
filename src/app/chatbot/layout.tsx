@@ -1,7 +1,9 @@
 "use client"
+import { TUseSession, useSession } from '@/context';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
 import { v4 } from 'uuid';
 
 const data = [
@@ -89,6 +91,18 @@ const Sidebar = () => {
 };
 
 export default function ChatbotLayout({ children }: { children: React.ReactNode }) {
+  const { userData } = useSession() as TUseSession
+
+  const router = useRouter()
+
+  useEffect(() => {
+    if (userData?.role == "student") {
+      router.replace("/chatbot")
+    } else if (userData?.role == "faculty") {
+      router.replace("/courseReview")
+    }
+  },[])
+
   return (
     <div className="flex relative">
       <Sidebar />

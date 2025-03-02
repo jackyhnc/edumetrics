@@ -8,7 +8,10 @@ export default function DefaultChatbot() {
   const router = useRouter();
 
   useEffect(() => {
-    router.push(`chatbot/${uuidv4()}`);
+    const interval = setInterval(() => {
+      router.push(`chatbot/${uuidv4()}`);
+    }, 1000); // Adjust the interval as needed
+    return () => clearInterval(interval);
   }, [router]);
 
   return (

@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { useSession } from "@/context";
+import { TUseSession, useSession } from "@/context";
 import { useRouter } from "next/navigation";
 import { addNewUser } from "@/config/firebase";
 
@@ -29,7 +29,7 @@ export default function SignUp() {
   const [searchLoading, setSearchLoading] = useState(false);
   const [userRole, setUserRole] = useState<UserRole>("student");
 
-  const { handleSignup } = useSession();
+  const { handleSignup } = useSession() as TUseSession
   const router = useRouter();
 
   const searchColleges = async (query: string) => {
@@ -143,13 +143,30 @@ export default function SignUp() {
       return;
     }
 
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    
+    if (!emailRegex.test(email)) {
+      setError("Please enter a valid email address.");
+      setLoading(false);
+      return;
+    }
+
+    if (password.length < 8 || !/[A-Za-z]/.test(password) || !/[!@#$%^&*]/.test(password)) {
+      setError("Password must be at least 8 characters long and include at least one letter and one special character.");
+      setLoading(false);
+      return;
+    }
+
     try {
-      const user = await handleSignup(email, password);
-      if (user) {
-        router.push("/option");
+      const user = await handleSignup(email, password, userRole, selectedCollege.name);
+      console.log(user)
+      if (user && (userRole === "faculty")) {
+        router.push("/courseReview")
+      } else if (user && userRole === "student") {
+        router.push("/chatbot");
       } else {
         setError(
-          "Password must be at least 8 characters long and include at least one letter and one special character."
+          "Error creating account. Could have been made already."
         );
       }
     } catch (err) {
@@ -316,29 +333,17 @@ export default function SignUp() {
             </div>
           </div>
 
-          <Link href="/option">
-            <button
-              type="submit"
-              disabled={!selectedCollege}
-              className={`w-full flex justify-center px-4 py-3 rounded-md font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-white/30 ${
-                selectedCollege
-                  ? "bg-white text-black hover:bg-gray-100 transition-colors"
-                  : "bg-white/20 text-white/50 cursor-not-allowed"
-              }`}
-              onClick={() => {
-                console.log("SELECTED:");
-                console.log(selectedCollege?.name);
-                console.log(userRole);
-                addNewUser({
-                  university: selectedCollege!.name,
-                  role: userRole,
-                  email: email,
-                });
-              }}
-            >
-              Continue
-            </button>
-          </Link>
+          <button
+            type="submit"
+            disabled={!selectedCollege}
+            className={`w-full flex justify-center px-4 py-3 rounded-md font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-white/30 ${
+              selectedCollege
+                ? "bg-white text-black hover:bg-gray-100 transition-colors"
+                : "bg-white/20 text-white/50 cursor-not-allowed"
+            }`}
+          >
+            Continue
+          </button>
         </form>
 
         {error && <div className="text-red-500 text-center mt-4">{error}</div>}
