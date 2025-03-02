@@ -176,9 +176,14 @@ export default function SignUp() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-black relative overflow-hidden">
+    <div className="min-h-screen bg-black text-white relative overflow-hidden">
+      {/* Background elements */}
+      <div className="absolute top-1/3 -left-32 w-80 h-80 bg-gradient-to-br from-white via-purple-500 to-purple-900 rounded-full opacity-20 blur-3xl animate-pulse"></div>
+      <div className="absolute bottom-1/3 -right-32 w-80 h-80 bg-gradient-to-br from-black via-purple-600 to-purple-900 rounded-full opacity-20 blur-3xl animate-pulse"></div>
+      
+      {/* Loading Overlay */}
       {loading && (
-        <div className="absolute inset-0 flex items-center justify-center bg-black/80 backdrop-blur-2xl transition-opacity animate-fadeIn">
+        <div className="absolute inset-0 flex items-center justify-center bg-black/80 backdrop-blur-2xl z-50 transition-opacity animate-fadeIn">
           <div className="relative w-16 h-16">
             <div className="absolute inset-0 border-4 border-transparent border-t-white rounded-full animate-spin"></div>
             <div className="absolute inset-0 border-4 border-transparent border-b-purple-400 rounded-full animate-spin-slow"></div>
@@ -187,180 +192,286 @@ export default function SignUp() {
         </div>
       )}
 
-      <div className="max-w-md w-full space-y-8 p-8 bg-white/10 rounded-lg shadow-lg shadow-purple-500/30">
-        <div className="text-center">
-          <Link
-            href="/"
-            className="text-2xl font-bold bg-gradient-to-r from-white via-purple-400 to-purple-700 text-transparent bg-clip-text drop-shadow-lg"
-          >
-            EduMetrics
-          </Link>
-          <h2 className="mt-6 text-3xl font-bold text-white">Create your account</h2>
-        </div>
-
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-          <div className="space-y-4">
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-white/80">
-                EMAIL ADDRESS
-              </label>
-              <input
-                id="email"
-                name="email"
-                type="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="mt-1 block w-full px-4 py-3 bg-white/10 border border-white/10 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent"
-              />
-            </div>
-
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium text-white/80">
-                PASSWORD
-              </label>
-              <input
-                id="password"
-                name="password"
-                type="password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="mt-1 block w-full px-4 py-3 bg-white/10 border border-white/10 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent"
-              />
-            </div>
-
-            <div>
-              <label htmlFor="confirmPassword" className="block text-sm font-medium text-white/80">
-                CONFIRM PASSWORD
-              </label>
-              <input
-                id="confirmPassword"
-                name="confirmPassword"
-                type="password"
-                required
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                className="mt-1 block w-full px-4 py-3 bg-white/10 border border-white/10 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent"
-              />
-            </div>
-
-            <div>
-              <label htmlFor="university" className="block text-sm font-medium text-white/80">
-                SEARCH FOR YOUR UNIVERSITY
-              </label>
-              <input
-                id="university"
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Type to search..."
-                className="mt-1 block w-full px-4 py-3 bg-white/10 border border-white/10 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent placeholder-white/30"
-              />
-            </div>
-
-            {searchLoading && (
-              <div className="text-white/70 text-center py-2">
-                <div className="inline-block animate-spin h-5 w-5 border-2 border-white/20 border-t-white/80 rounded-full mr-2"></div>
-                Searching...
-              </div>
-            )}
-
-            {colleges.length > 0 && !searchLoading && (
-              <div className="mt-2 max-h-[200px] overflow-y-auto [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:bg-white/20 [&::-webkit-scrollbar-thumb]:rounded-full">
-                <div className="space-y-2 [&:has(>:nth-child(4))]:pr-4">
-                  {colleges.map((college) => (
-                    <button
-                      key={college.id}
-                      type="button"
-                      onClick={() => setSelectedCollege(college)}
-                      className={`w-full text-left px-4 py-3 rounded-md transition-colors ${
-                        selectedCollege?.id === college.id
-                          ? "bg-white/20 text-white"
-                          : "bg-white/10 text-white/70 hover:bg-white/15"
-                      }`}
-                    >
-                      <div className="font-medium">{college.name}</div>
-                      <div className="text-sm text-white/50">
-                        {college.address && <span>{college.address}</span>}
-
-                        {college.address && (college.city || college.state || college.zip) && <span>, </span>}
-
-                        {(college.city || college.state || college.zip) && (
-                          <span>
-                            {college.city}
-                            {college.city && college.state && ", "}
-                            {college.state}
-                            {(college.city || college.state) && college.zip && " "}
-                            {college.zip}
-                          </span>
-                        )}
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {searchQuery.length >= 2 && colleges.length === 0 && !searchLoading && (
-              <div className="text-white/50 text-center py-3">No universities found matching "{searchQuery}"</div>
-            )}
-
-            <div className="space-y-3">
-              <label className="block text-sm font-medium text-white/80">I AM A</label>
-              <div className="flex space-x-4">
-                <label className="flex items-center space-x-2 cursor-pointer">
-                  <input
-                    type="radio"
-                    name="role"
-                    checked={userRole === "student"}
-                    onChange={() => setUserRole("student")}
-                    className="w-4 h-4 text-purple-500 bg-white/10 border-white/10 focus:ring-purple-400 focus:ring-offset-black"
-                  />
-                  <span className="text-white">Student</span>
-                </label>
-                <label className="flex items-center space-x-2 cursor-pointer">
-                  <input
-                    type="radio"
-                    name="role"
-                    checked={userRole === "faculty"}
-                    onChange={() => setUserRole("faculty")}
-                    className="w-4 h-4 text-purple-500 bg-white/10 border-white/10 focus:ring-purple-400 focus:ring-offset-black"
-                  />
-                  <span className="text-white">Faculty</span>
-                </label>
-              </div>
-            </div>
+      <div className="max-w-md mx-auto p-8 flex items-center justify-center min-h-screen relative z-10">
+        <div className="w-full space-y-8 bg-white/10 rounded-lg shadow-lg shadow-purple-500/30 p-8 animate-fadeIn">
+          <div className="text-center">
+            <Link
+              href="/"
+              className="text-2xl font-bold text-white hover:text-purple-300 transition-colors"
+            >
+              EduMetrics
+            </Link>
+            <h2 className="mt-6 text-3xl font-bold">Create your account</h2>
           </div>
 
-          <button
-            type="submit"
-            disabled={!selectedCollege}
-            className={`w-full flex justify-center px-4 py-3 rounded-md font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-white/30 ${
-              selectedCollege
-                ? "bg-white text-black hover:bg-gray-100 transition-colors"
-                : "bg-white/20 text-white/50 cursor-not-allowed"
-            }`}
-          >
-            Continue
-          </button>
-        </form>
+          <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
+            <div className="space-y-4">
+              <div>
+                <label htmlFor="email" className="block text-sm font-medium text-white/80">
+                  EMAIL ADDRESS
+                </label>
+                <input
+                  id="email"
+                  name="email"
+                  type="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="mt-1 block w-full px-4 py-3 bg-white/10 border border-white/10 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent"
+                />
+              </div>
 
-        {error && <div className="text-red-500 text-center mt-4">{error}</div>}
+              <div>
+                <label htmlFor="password" className="block text-sm font-medium text-white/80">
+                  PASSWORD
+                </label>
+                <input
+                  id="password"
+                  name="password"
+                  type="password"
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="mt-1 block w-full px-4 py-3 bg-white/10 border border-white/10 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent"
+                />
+              </div>
 
-        <div className="text-center text-sm mt-4">
-          <p className="text-white/50">
-            Already have an account?{" "}
-            <Link href="/signin" className="font-medium text-white hover:text-white/80">
-              Sign in
-            </Link>{" "}
-            instead.
-          </p>
+              <div>
+                <label htmlFor="confirmPassword" className="block text-sm font-medium text-white/80">
+                  CONFIRM PASSWORD
+                </label>
+                <input
+                  id="confirmPassword"
+                  name="confirmPassword"
+                  type="password"
+                  required
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  className="mt-1 block w-full px-4 py-3 bg-white/10 border border-white/10 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent"
+                />
+              </div>
+
+              <div>
+                <label htmlFor="university" className="block text-sm font-medium text-white/80">
+                  SEARCH FOR YOUR UNIVERSITY
+                </label>
+                <div className="relative">
+                  <input
+                    id="university"
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Type to search..."
+                    className="mt-1 block w-full px-4 py-3 bg-white/10 border border-white/10 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent placeholder-white/30"
+                  />
+                  {searchQuery.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setSearchQuery("")}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-white/50 hover:text-white"
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-5 w-5"
+                        viewBox="0 0 20 20"
+                        fill="currentColor"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {searchLoading && (
+                <div className="flex justify-center items-center py-2 text-white/70">
+                  <div className="relative w-5 h-5 mr-2">
+                    <div className="absolute inset-0 border-2 border-transparent border-t-white rounded-full animate-spin"></div>
+                    <div className="absolute inset-0 border-2 border-transparent border-b-purple-400 rounded-full animate-spin-slow"></div>
+                  </div>
+                  <span>Searching universities...</span>
+                </div>
+              )}
+
+              {colleges.length > 0 && !searchLoading && (
+                <div className="mt-2 max-h-48 overflow-y-auto custom-scrollbar rounded-md">
+                  <div className="space-y-2">
+                    {colleges.map((college) => (
+                      <button
+                        key={college.id}
+                        type="button"
+                        onClick={() => setSelectedCollege(college)}
+                        className={`w-full text-left px-4 py-3 rounded-md transition-all hover-scale ${
+                          selectedCollege?.id === college.id
+                            ? "bg-white/20 text-white shadow-purple-500/30"
+                            : "bg-white/10 text-white/80 hover:bg-white/15"
+                        }`}
+                      >
+                        <div className="font-medium">{college.name}</div>
+                        <div className="text-sm text-white/50">
+                          {college.address && <span>{college.address}</span>}
+                          {college.address && (college.city || college.state || college.zip) && <span>, </span>}
+                          {(college.city || college.state || college.zip) && (
+                            <span>
+                              {college.city}
+                              {college.city && college.state && ", "}
+                              {college.state}
+                              {(college.city || college.state) && college.zip && " "}
+                              {college.zip}
+                            </span>
+                          )}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {selectedCollege && (
+                <div className="mt-2 p-3 bg-white/15 rounded-md shadow-md">
+                  <div className="font-medium text-purple-300">Selected University:</div>
+                  <div className="mt-1">{selectedCollege.name}</div>
+                  <div className="text-sm text-white/50">
+                    {selectedCollege.city}
+                    {selectedCollege.city && selectedCollege.state && ", "}
+                    {selectedCollege.state}
+                  </div>
+                </div>
+              )}
+
+              {searchQuery.length >= 2 && colleges.length === 0 && !searchLoading && (
+                <div className="text-white/50 text-center py-3">No universities found matching "{searchQuery}"</div>
+              )}
+
+              <div className="space-y-3">
+                <label className="block text-sm font-medium text-white/80">I AM A</label>
+                <div className="flex space-x-4">
+                  <label className="flex items-center space-x-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="role"
+                      checked={userRole === "student"}
+                      onChange={() => setUserRole("student")}
+                      className="w-4 h-4 text-purple-500 bg-white/10 border-white/10 focus:ring-purple-400 focus:ring-offset-black"
+                    />
+                    <span className="text-white">Student</span>
+                  </label>
+                  <label className="flex items-center space-x-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="role"
+                      checked={userRole === "faculty"}
+                      onChange={() => setUserRole("faculty")}
+                      className="w-4 h-4 text-purple-500 bg-white/10 border-white/10 focus:ring-purple-400 focus:ring-offset-black"
+                    />
+                    <span className="text-white">Faculty</span>
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              disabled={!selectedCollege}
+              className={`w-full flex justify-center px-6 py-3 rounded-lg font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-white/30 transition-all hover-scale shadow-lg ${
+                selectedCollege
+                  ? "bg-purple-600 hover:bg-purple-700 text-white shadow-purple-500/30"
+                  : "bg-white/20 text-white/50 cursor-not-allowed"
+              }`}
+            >
+              Create Account
+            </button>
+          </form>
+
+          {error && (
+            <div className="text-red-400 text-center mt-4 p-3 bg-red-900/30 rounded-md border border-red-500/30">
+              {error}
+            </div>
+          )}
+
+          <div className="text-center text-sm mt-4">
+            <p className="text-white/70">
+              Already have an account?{" "}
+              <Link href="/signin" className="font-medium text-purple-300 hover:text-purple-200">
+                Sign in
+              </Link>{" "}
+              instead.
+            </p>
+          </div>
         </div>
       </div>
 
-      <div className="absolute top-1/3 -left-32 w-80 h-80 bg-gradient-to-br from-white via-purple-500 to-purple-900 rounded-full opacity-30 blur-3xl animate-pulse"></div>
-      <div className="absolute bottom-1/3 -right-32 w-80 h-80 bg-gradient-to-br from-black via-purple-600 to-purple-900 rounded-full opacity-30 blur-3xl animate-pulse"></div>
+      <style jsx>{`
+        .animate-fadeIn {
+          animation: fadeIn 0.3s ease-in-out forwards;
+        }
+        
+        @keyframes fadeIn {
+          from { opacity: 0; transform: translateY(10px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        
+        @keyframes spinSlow {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+        
+        @keyframes spinReverse {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(-360deg); }
+        }
+        
+        .animate-spin {
+          animation: spinSlow 1.2s linear infinite;
+        }
+        
+        .animate-spin-slow {
+          animation: spinSlow 2s linear infinite;
+        }
+        
+        .animate-spin-reverse {
+          animation: spinReverse 1.5s linear infinite;
+        }
+        
+        .animate-pulse {
+          animation: pulse 6s infinite alternate;
+        }
+        
+        @keyframes pulse {
+          0% { transform: scale(1); opacity: 0.2; }
+          100% { transform: scale(1.3); opacity: 0.4; }
+        }
+        
+        .hover-scale {
+          transition: transform 0.2s ease-in-out;
+        }
+        
+        .hover-scale:hover {
+          transform: scale(1.02);
+        }
+        
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 8px;
+        }
+        
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: rgba(255, 255, 255, 0.1);
+          border-radius: 4px;
+        }
+        
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background: rgba(255, 255, 255, 0.2);
+          border-radius: 4px;
+        }
+        
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+          background: rgba(255, 255, 255, 0.3);
+        }
+      `}</style>
     </div>
   );
 }
