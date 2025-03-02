@@ -1,4 +1,4 @@
-# edumetrics
+# Edumetrics
 
 EduMetrics - Unlock Student Success with Data-Driven Tutoring
 
@@ -7,6 +7,20 @@ EduMetrics is an intelligent tutoring AI that helps students master difficult su
 
 
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+
+## Features
+- Receive AI helper
+- Real-time AI chat
+
+
+
+## Technologies Used
+- React.js
+- TypeScript
+- Tailwind
+- Next.js
+- firebase
+- OpenAPI Integration
 
 ## Getting Started
 
