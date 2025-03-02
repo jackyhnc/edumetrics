@@ -1,5 +1,8 @@
+"use client"
 import Image from 'next/image';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { v4 } from 'uuid';
 
 const data = [
   {
@@ -40,21 +43,24 @@ const data = [
 
 
 const Sidebar = () => {
+  const router = useRouter()
   return (
     <aside className="bg-gray-100 px-6 w-64 h-screen py-14 space-y-8">
       <div className="">
         <div className="flex mb-4 " id="logo">
           <Image
-            src={"logo_text.svg"}
+            src={"/logo_text.svg"}
             alt={"logo_text"}
             width={0}
             height={0}
             className="h-auto w-36"
           />
         </div>
-        <div className="cursor-pointer hover:bg-gray-200 p-2 gap-3 align-items border-zinc-300 border-1 rounded-md flex m-auto">
+        <div className="cursor-pointer hover:bg-gray-200 p-2 gap-3 align-items border-zinc-300 border-1 rounded-md flex m-auto"
+          onClick={() => router.push(`${v4()}`)}
+        >
           <Image
-            src={"logo_icon.svg"}
+            src={"/logo_icon.svg"}
             alt={"logo_icon"}
             width={0}
             height={0}
