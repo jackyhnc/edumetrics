@@ -8,6 +8,7 @@ import {
   query,
   where,
   DocumentReference,
+  setDoc,
 } from "firebase/firestore";
 import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
@@ -40,7 +41,8 @@ interface Prompt {
   attachments?: unknown;
 }
 
-interface DocumentChat extends DocumentUser {
+export interface DocumentChat extends DocumentUser {
+    id: string,
   name: string;
   course: string;
   prompts: Array<{
@@ -94,13 +96,27 @@ export async function addNewChat(info: DocumentChat) {
   const chatsRef = collection(userRef, "chats");
 
   // Check if chat exists
-  const chatRef = await findOrCreateDoc(chatsRef, "name", info.name, {
-    course: info.course,
-    prompts: info.prompts,
-    id: info.id,
-  });
+  const chatRef = await findDoc(chatsRef, "id", info.id);
+  
+  if (chatRef) {
+    // If chat exists, update it
+    await setDoc(chatRef, {
+      course: info.course,
+      prompts: info.prompts,
+      id: info.id,
+      name: info.name,
+    });
+  } else {
+    // If chat does not exist, create it
+    await addDoc(chatsRef, {
+      course: info.course,
+      prompts: info.prompts,
+      id: info.id,
+      name: info.name,
+    });
+  }
 
-  return chatRef;
+  return chatRef || (await findDoc(chatsRef, "id", info.id));
 }
 
 export async function addPrompt(info: DocumentPrompt) {
@@ -117,14 +133,18 @@ export async function addPrompt(info: DocumentPrompt) {
   });
 }
 
-export async function getChats(info: DocumentUser) {
+interface DocumentUserChats extends DocumentUser {
+    id: string
+}
+
+export async function getChats(info: DocumentUserChats) {
   const userRef = await findDoc(collection(db, "users"), "email", info.email);
   const chatsRef = userRef && (await getDocs(collection(userRef, "chats")));
 
   if (!chatsRef) {
     return [];
   }
-  return chatsRef.docs.map(doc => doc.data());
+  return chatsRef.docs.map(doc => doc.data())
 }
 
 export class EduMetricsAPI {

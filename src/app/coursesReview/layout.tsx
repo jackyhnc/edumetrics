@@ -9,9 +9,7 @@ const CoursesReviewLayout = ({ children }: { children: React.ReactNode }) => {
   const { userData } = useSession() as TUseSession;
 
   useEffect(() => {
-    if (userData?.role === "faculty") {
-      router.replace("/courseReview");
-    } else if (userData?.role === "student") {
+    if (userData?.role === "student") {
       router.replace("/chatbot");
     }
   }, [userData, router]);

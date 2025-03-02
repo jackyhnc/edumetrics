@@ -1,50 +1,13 @@
 "use client"
+import { getChats } from '@/config/firebase';
 import { TUseSession, useSession } from '@/context';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { v4 } from 'uuid';
 
-const data = [
-  {
-    name: "derivative",
-    course: "math",
-    id: 123123,
-    prompts: [
-      {
-        content: "hi",
-        role: "user",
-        time: 1,
-      },
-      {
-        content: "hey",
-        role: "assistant",
-        time: 2,
-      }
-    ]
-  },
-  {
-    name: "shaekspesare",
-    course: "english",
-    id: 4512,
-    prompts: [
-      {
-        content: "hi",
-        role: "user",
-        time: 1,
-      },
-      {
-        content: "hey",
-        role: "assistant",
-        time: 2,
-      }
-    ]
-  }
-]
-
-
-const Sidebar = () => {
+const Sidebar = ({data}:any) => {
   return (
     <aside className="bg-gray-100 px-6 w-64 h-screen py-14 space-y-8 fixed bottom-0">
       <div className="">
@@ -77,10 +40,10 @@ const Sidebar = () => {
       <div className="">
         <div className="font-semibold">Chats</div>
         <div className="flex flex-col">
-          {
-            data.map((chat) => {
+          {data &&
+            data.map((chat: any) => {
               return (
-                <Link key={chat.name} href={`${chat.id}`} className="cursor-pointer hover:bg-gray-200 p-2 rounded-md">{chat.name}</Link>
+                <Link key={chat.name} href={`${chat.id}`} className="cursor-pointer w-full truncate hover:bg-gray-200 p-2 rounded-md">{chat.name}</Link>
               )
             })
           }
@@ -91,24 +54,62 @@ const Sidebar = () => {
 };
 
 export default function ChatbotLayout({ children }: { children: React.ReactNode }) {
-  const { userData, user } = useSession() as TUseSession
+  const { userData, user, handleLogout } = useSession() as TUseSession
   const router = useRouter()
   console.log(userData)
   console.log(user)
 
+  const [data,setData] = useState<any>()
+
   useEffect(() => {
-    if (userData?.role == "student") {
-      router.replace("/chatbot")
-    } else if (userData?.role == "faculty") {
+    async function hook() {
+      if (user && userData) {
+        const res = await getChats({
+          id: "1",
+          email: user.email!,
+          university: userData.university!,
+          role: userData.role!,
+        });
+        if (res) {
+          const data = res.map(r => {
+            return {
+              name: r.name,
+              id: r.id,
+            }
+          })
+          setData(data)
+        } else {
+          console.error("Failed to retrieve chat data.");
+        }
+      } else {
+        console.log("no user")
+      }
+    }
+    hook().catch(error => {
+      console.error("Error in hook:", error);
+    });
+  }, [user, userData]);
+
+  useEffect(() => {
+    if (userData?.role == "faculty") {
       router.replace("/courseReview")
-    } else if (!user || !userData) {
-      router.replace("/signup")
     }
   },[])
 
   return (
     <div className="flex relative">
-      <Sidebar />
+      <Sidebar data={data}/>
+      <div className="absolute top-2 right-4 z-[101]">
+        <button 
+          onClick={() => {
+            handleLogout()
+            router.push("/")
+          }} 
+          className="flex items-center p-2 bg-gray-200 rounded hover:bg-gray-300"
+        >
+          <i className="fas fa-sign-out-alt text-xl hover:cursor-pointer"></i>
+        </button>
+      </div>
       <div className="w-64 h-screen"></div>
       <main className="flex-1">{children}</main>
     </div>
