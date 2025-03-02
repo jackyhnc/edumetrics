@@ -12,7 +12,7 @@ export default function SignUp() {
   const [error, setError] = useState('');
   
   const { handleSignup } = useSession();
-  const router = useRouter(); // Use router for redirection
+  const router = useRouter(); 
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
