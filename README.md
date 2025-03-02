@@ -21,6 +21,8 @@ EduMetrics is an intelligent tutoring AI that helps students master difficult su
 - Next.js
 - firebase
 - OpenAPI Integration
+- DrexelScrapper API
+- USAColleges API
 
 ## Getting Started
 
