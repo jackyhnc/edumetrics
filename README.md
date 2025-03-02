@@ -11,7 +11,34 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
 - Receive AI helper
 - Real-time AI chat
 
+## API Usage
+```ts
+export class EduMetricsAPI {
+  // Get all universities stored in the database
+  static async getUniversities();
 
+  // Get all courses listed under the selected university
+  static async getCourses(university: string): Promise<string[]>;
+
+  // Get all subjects listed under the selected university and course
+  static async getSubjects(university: string, course: string);
+
+  // Get all prompts for a specific subject
+  static async getPrompts(university: string, course: string, subject: string);
+
+  // Get the average rating of a specific subject
+  static async getSubjectAverageRating(university: string, course: string, subject: string);
+
+  // Get the average rating of a specific course
+  static async getCourseAverageRating(university: string, course: string);
+
+  // Generate a summary for a specific subject based on prompts
+  static async getSubjectSummary(university: string, course: string, subject: string);
+
+  // Generate a summary for a specific course based on subject summaries
+  static async getCourseSummary(university: string, course: string);
+}
+```
 
 ## Technologies Used
 - React.js
@@ -30,17 +57,17 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
 
 **Installation**
 1. clone this repository:
-   
+
    ```bash
    git clone
    ```
 2. Navigate to the project directory
-   
+
     ```bash
    cd edumetrics
     ```
 3. Install dependencies
-   
+
     ```bash
    npm install
     ```
