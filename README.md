@@ -24,7 +24,21 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
 
 ## Getting Started
 
-First, run the development server:
+# Prerequisites
+- Node.js
+- https://nodejs.org/
+
+# Installation
+1. clone this repository:
+   ```bash
+   git clone
+2. Navigate to the project directory
+    ```bash
+   cd edumetrics
+3. Install dependencies
+    ```bash
+   npm install
+4. Run the development server:
 
 ```bash
 npm run dev
