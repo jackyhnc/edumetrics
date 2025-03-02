@@ -13,6 +13,7 @@
     "@ai-sdk/react": "^1.1.19",
     "@fortawesome/fontawesome-svg-core": "^6.7.2",
     "@fortawesome/react-fontawesome": "^0.2.2",
+    "@radix-ui/react-slot": "^1.1.2",
     "ai": "^4.1.47",
     "firebase": "^11.4.0",
     "marked": "^15.0.7",

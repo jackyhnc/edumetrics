@@ -38,6 +38,7 @@ export function SessionProvided(props: { children: React.ReactNode }) {
       const userDoc: TUser = {
         chats: userSnapData?.chats,
         role: userSnapData?.role,
+        courses: userSnapData?.courses,
       }
       setUserData(userDoc)
     });
@@ -117,4 +118,5 @@ type TChat = {
 export type TUser = {
   chats: TChat[];
   role: "student" | "faculty";
+  courses: string[]
 };

@@ -43,11 +43,12 @@ const data = [
 
 
 const Sidebar = () => {
-  const router = useRouter()
   return (
-    <aside className="bg-gray-100 px-6 w-64 h-screen py-14 space-y-8">
+    <aside className="bg-gray-100 px-6 w-64 h-screen py-14 space-y-8 fixed bottom-0">
       <div className="">
-        <div className="flex mb-4 " id="logo">
+        <div className="flex mb-6 h-auto w-36 cursor-pointer" id="logo"
+          onClick={() => window.location.href = '/'}
+        >
           <Image
             src={"/logo_text.svg"}
             alt={"logo_text"}
@@ -57,7 +58,9 @@ const Sidebar = () => {
           />
         </div>
         <div className="cursor-pointer hover:bg-gray-200 p-2 gap-3 align-items border-zinc-300 border-1 rounded-md flex m-auto"
-          onClick={() => router.push(`${v4()}`)}
+          onClick={() => {
+            window.location.href = `/chatbot/${v4()}`
+          }}
         >
           <Image
             src={"/logo_icon.svg"}
@@ -87,9 +90,10 @@ const Sidebar = () => {
 
 export default function ChatbotLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex">
+    <div className="flex relative">
       <Sidebar />
-      <main className="flex-1 p-4">{children}</main>
+      <div className="w-64 h-screen"></div>
+      <main className="flex-1">{children}</main>
     </div>
   );
 }
