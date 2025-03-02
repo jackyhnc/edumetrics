@@ -1,15 +1,18 @@
-# Edumetrics
+# EduMetrics
 
-EduMetrics - Unlock Student Success with Data-Driven Tutoring
+EduMetrics - Empowering Schools with AI-Driven Learning Analytics
 
-EduMetrics is an intelligent tutoring AI that helps students master difficult subjects while providing real-time insights to universities. By tracking learning patterns and pinpointing struggles, we aim to deliver personalized support and data-driven feedback to improve student outcomes and university curricula.
+EduMetrics is an AI-powered analytics platform and tutoring chatbot that helps universities identify student learning challenges through real-time data insights. By analyzing student interactions with their AI tutor, we track learning patterns, pinpoint struggles, and provide institutions with actionable data to enhance curricula and support student success. EduMetrics offers an intuitive web application for students and faculty, along with a user-friendly API for seamless integration.
 
+<img width="1412" alt="image" src="https://github.com/user-attachments/assets/970e1aef-962e-4c9c-b6c1-2df82978ec7f" />
 
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
 ## Features
 - Receive AI helper
 - Real-time AI chat
+- Summarizes issues students face with certain topics
+- Gives detail for course improvement
 
 ## API Usage
 ```ts
@@ -41,12 +44,12 @@ export class EduMetricsAPI {
 ```
 
 ## Technologies Used
+- Next.js
 - React.js
 - TypeScript
-- Tailwind
-- Next.js
-- firebase
 - OpenAPI Integration
+- Firebase
+- Tailwind
 
 ## Getting Started
 
@@ -84,7 +87,13 @@ bun dev
 ```
 5. Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
+## Contributing
+
+We'd happily welcome any community contributions! If you would like to work with EduMetrics, please get in touch with us!
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:
+
+
 
