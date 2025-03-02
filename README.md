@@ -24,11 +24,11 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
 
 ## Getting Started
 
-# Prerequisites
+**Prerequisites**
 - Node.js
 - https://nodejs.org/
 
-# Installation
+**Installation**
 1. clone this repository:
    ```bash
    git clone
