@@ -1,24 +1,44 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 export default function LandingPage() {
+  const router = useRouter();
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const handleRouteChange = () => setLoading(false);
+    router.events?.on('routeChangeComplete', handleRouteChange);
+    return () => {
+      router.events?.off('routeChangeComplete', handleRouteChange);
+    };
+  }, [router]);
+
+  const handleClick = () => {
+    setLoading(true);
+  };
+
   return (
-    <div className="min-h-screen flex flex-col bg-black text-white">
+    <div className="min-h-screen flex flex-col bg-black text-white relative">
+      {loading && (
+        <div className="absolute inset-0 flex items-center justify-center bg-black/70 backdrop-blur-md transition-opacity animate-fadeIn">
+          <div className="relative w-16 h-16">
+            <div className="absolute inset-0 border-4 border-transparent border-t-white rounded-full animate-spin"></div>
+            <div className="absolute inset-0 border-4 border-transparent border-b-blue-500 rounded-full animate-spin-slow"></div>
+            <div className="absolute inset-0 border-4 border-transparent border-l-purple-500 rounded-full animate-spin-reverse"></div>
+          </div>
+        </div>
+      )}
+
       <header className="p-6 flex justify-between items-center max-w-7xl mx-auto w-full">
         <div className="text-2xl font-bold">EduMetrics</div>
         <div className="flex gap-6">
-          <Link 
-            href="/signin"
-            className="px-6 py-2 text-white/80 hover:text-white transition-colors"
-          >
+          <Link href="/signin" onClick={handleClick} className="px-6 py-2 text-white/80 hover:text-white transition-colors">
             SIGN IN
           </Link>
-          <Link
-            href="/signup"
-            className="px-6 py-2 bg-white text-black hover:bg-gray-100 transition-colors rounded-md"
-          >
+          <Link href="/signup" onClick={handleClick} className="px-6 py-2 bg-white text-black hover:bg-gray-100 transition-colors rounded-md">
             GET STARTED
           </Link>
         </div>
@@ -34,12 +54,6 @@ export default function LandingPage() {
             Streamline your learning experience with our simple, intuitive platform.
             Get personalized tutoring and real-time analytics to boost your academic success.
           </p>
-          <div className="flex gap-6 mt-6 text-sm text-white/50">
-            <div className="flex items-center gap-2">
-            </div>
-            <div className="flex items-center gap-2">
-            </div>
-          </div>
         </div>
 
         <div className="flex-1 mt-12 lg:mt-0">
@@ -59,6 +73,39 @@ export default function LandingPage() {
           </div>
         </div>
       </main>
+
+      <style jsx>{`
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+
+        @keyframes spinSlow {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+
+        @keyframes spinReverse {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(-360deg); }
+        }
+
+        .animate-fadeIn {
+          animation: fadeIn 0.3s ease-in-out;
+        }
+
+        .animate-spin {
+          animation: spinSlow 1.2s linear infinite;
+        }
+
+        .animate-spin-slow {
+          animation: spinSlow 2s linear infinite;
+        }
+
+        .animate-spin-reverse {
+          animation: spinReverse 1.5s linear infinite;
+        }
+      `}</style>
     </div>
   );
 }
