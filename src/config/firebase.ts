@@ -25,19 +25,18 @@ interface DocumentUser {
   role: string;
 }
 
-interface DocumentPrompt {
+interface DocumentCourse {
   university: string;
   course: string;
+  description?: string;
+  credits?: number;
+  sections?: number;
+}
+
+interface DocumentPrompt extends DocumentCourse {
   subtopic: string;
   prompt: string;
   rating: number;
-}
-
-interface Prompt {
-  content: string;
-  role: string;
-  time: number;
-  attachments?: unknown;
 }
 
 interface DocumentChat extends DocumentUser {
@@ -46,7 +45,7 @@ interface DocumentChat extends DocumentUser {
   prompts: Array<{
     id: string;
     content: string;
-    role: 'system' | 'user' | 'assistant' | 'data';
+    role: "system" | "user" | "assistant" | "data";
   }>;
 }
 
@@ -91,27 +90,25 @@ export async function addNewChat(info: DocumentChat) {
     role: info.role,
   });
 
-  const chatsRef = collection(userRef, "chats");
-
   // Check if chat exists
-  const chatRef = await findOrCreateDoc(chatsRef, "name", info.name, {
+  const chatRef = await findOrCreateDoc(collection(userRef, "chats"), "name", info.name, {
     course: info.course,
     prompts: info.prompts,
-    id: info.id,
   });
 
   return chatRef;
 }
 
-export async function addPrompt(info: DocumentPrompt) {
-  const universitiesRef = collection(db, "universities");
+export async function addNewCourse(info: DocumentCourse) {
+  const uniRef = await findOrCreateDoc(collection(db, "universities"), "name", info.university);
 
-  // Find or create university, course, and subject
-  const uniRef = await findOrCreateDoc(universitiesRef, "name", info.university);
-  const courseRef = await findOrCreateDoc(collection(uniRef, "courses"), "name", info.course);
+  return await findOrCreateDoc(collection(uniRef, "courses"), "name", info.course);
+}
+
+export async function addPrompt(info: DocumentPrompt) {
+  const courseRef = await addNewCourse(info);
   const subjectRef = await findOrCreateDoc(collection(courseRef, "subjects"), "subtopic", info.subtopic);
 
-  // Find or create prompt
   return await findOrCreateDoc(collection(subjectRef, "prompts"), "prompt", info.prompt, {
     rating: info.rating,
   });
@@ -124,18 +121,10 @@ export async function getChats(info: DocumentUser) {
   if (!chatsRef) {
     return [];
   }
-  return chatsRef.docs.map(doc => doc.data());
+  return chatsRef.docs.map((doc) => doc.data());
 }
 
 export class EduMetricsAPI {
-  university: string;
-  course: string;
-
-  constructor() {
-    this.university = "";
-    this.course = "";
-  }
-
   // Get all universities stored in database
   static async getUniversities() {
     return (await getDocs(collection(db, "universities"))).docs.map((doc) => doc.data().name);
@@ -210,10 +199,10 @@ export class EduMetricsAPI {
       system: `You are EduMetrics, an AI designed to gather prompts under an academic institutional course.
             You will analyze the prompts and report this data back to the academic institution and its faculty.
             The report should be written in a way to understand what students are struggling with.`,
-            prompt: prompt,
-        });
-        return text;
-    }
+      prompt: prompt,
+    });
+    return text;
+  }
 
   static async getCourseSummary(university: string, course: string) {
     const subjects = await this.getSubjects(university, course);
