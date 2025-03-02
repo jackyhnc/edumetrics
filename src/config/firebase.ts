@@ -1,15 +1,218 @@
+import {
+    getFirestore,
+    addDoc,
+    collection,
+    getDocs,
+    CollectionReference,
+    DocumentData,
+    query,
+    where,
+    DocumentReference,
+} from "firebase/firestore";
 import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
-
-const firebaseConfig = {
-    apiKey: "AIzaSyC8RNc-gR1CzQl3llPpLcWxHtXt4kz6vO4",
-    authDomain: "edu-metrics-713ec.firebaseapp.com",
-    projectId: "edu-metrics-713ec",
-    storageBucket: "edu-metrics-713ec.firebasestorage.app",
-    messagingSenderId: "392287801636",
-    appId: "1:392287801636:web:41d3168278df6cf6bbe3b1",
-    measurementId: "G-5XWSEVEC5S",
-};
+import { generateText } from "ai";
+import { openai } from "@ai-sdk/openai";
+import firebaseConfig from "./firebase.json";
 
 const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
 export const auth = getAuth(app);
+
+interface DocumentPrompt {
+    university: string;
+    course: string;
+    subtopic: string;
+    prompt: string;
+    rating: number;
+}
+
+interface Prompt {
+    content: string;
+    role: string;
+    time: number;
+    attachments?: unknown;
+}
+
+interface DocumentChat {
+    name: string;
+    email: string;
+    role: string;
+    course: string;
+    prompts: Prompt[];
+}
+
+async function findDoc(
+    collectionRef: CollectionReference<DocumentData, DocumentData>,
+    field: string,
+    value: unknown
+): Promise<DocumentReference<unknown, DocumentData> | null> {
+    const snapshot = await getDocs(query(collectionRef, where(field, "==", value)));
+
+    // Return existing document reference
+    if (!snapshot.empty) {
+        return snapshot.docs[0].ref;
+    }
+    return null;
+}
+
+async function findOrCreateDoc(
+    collectionRef: CollectionReference<DocumentData, DocumentData>,
+    field: string,
+    value: unknown,
+    additionalData = {}
+) {
+    const docRef = await findDoc(collectionRef, field, value);
+    return docRef ?? (await addDoc(collectionRef, { [field]: value, ...additionalData }));
+}
+
+export async function addNewChat(info: DocumentChat) {
+    const usersRef = collection(db, "users");
+
+    // Find or create user
+    const userRef = await findOrCreateDoc(usersRef, "email", info.email, {
+        role: info.role,
+    });
+
+    const chatsRef = collection(userRef, "chats");
+
+    // Check if chat exists
+    const chatRef = await findOrCreateDoc(chatsRef, "name", info.name, {
+        course: info.course,
+        prompts: info.prompts,
+    });
+
+    return chatRef;
+}
+
+export async function addPrompt(info: DocumentPrompt) {
+    const universitiesRef = collection(db, "universities");
+
+    // Find or create university, course, and subject
+    const uniRef = await findOrCreateDoc(universitiesRef, "name", info.university);
+    const courseRef = await findOrCreateDoc(collection(uniRef, "courses"), "name", info.course);
+    const subjectRef = await findOrCreateDoc(collection(courseRef, "subjects"), "subtopic", info.subtopic);
+
+    // Find or create prompt
+    return await findOrCreateDoc(collection(subjectRef, "prompts"), "prompt", info.prompt, {
+        rating: info.rating,
+    });
+}
+
+export class EduMetricsAPI {
+    university: string;
+    course: string;
+
+    constructor() {
+        this.university = "";
+        this.course = "";
+    }
+
+    // Get all universities stored in database
+    static async getUniversities() {
+        return (await getDocs(collection(db, "universities"))).docs.map((doc) => doc.data().name);
+    }
+
+    // Get all courses listed under selected university
+    static async getCourses(university: string) {
+        const docRef = await findDoc(collection(db, "universities"), "name", university);
+
+        if (!docRef) {
+            return [];
+        }
+        return (await getDocs(collection(docRef, "courses"))).docs.map((doc) => doc.data().name);
+    }
+
+    // Get all subjects listed under selected university and course
+    static async getSubjects(university: string, course: string) {
+        const uniRef = await findDoc(collection(db, "universities"), "name", university);
+        const courseRef = uniRef && (await findDoc(collection(uniRef, "courses"), "name", course));
+
+        if (!courseRef) {
+            return [];
+        }
+
+        return (await getDocs(collection(courseRef, "subjects"))).docs.map((doc) => doc.data().subtopic);
+    }
+
+    // Get all prompts for a specific subject
+    static async getPrompts(university: string, course: string, subject: string) {
+        const uniRef = await findDoc(collection(db, "universities"), "name", university);
+        const courseRef = uniRef && (await findDoc(collection(uniRef, "courses"), "name", course));
+        const subjectRef = courseRef && (await findDoc(collection(courseRef, "subjects"), "subtopic", subject));
+
+        if (!subjectRef) {
+            return [];
+        }
+
+        const promptsSnapshot = await getDocs(collection(subjectRef, "prompts"));
+        return promptsSnapshot.docs.map(doc => {
+            const data = doc.data();
+            return {
+                prompt: data.prompt,
+                rating: data.rating
+            };
+        });
+    }
+
+    static async getSubjectAverageRating(university: string, course: string, subject: string) {
+        const prompts = await this.getPrompts(university, course, subject);
+        const averageRating = prompts.reduce((sum, prompt) => sum + prompt.rating, 0) / prompts.length;
+        return averageRating;
+    }
+
+    static async getCourseAverageRating(university: string, course: string) {
+        const subjects = await this.getSubjects(university, course);
+        const subjectAverageRatings = await Promise.all(subjects.map((subject) => this.getSubjectAverageRating(university, course, subject)));
+        const averageRating = subjectAverageRatings.reduce((sum, rating) => sum + rating, 0) / subjectAverageRatings.length;
+        return averageRating;
+    }
+
+    static async getSubjectSummary(university: string, course: string, subject: string) {
+        const prompts = await this.getPrompts(university, course, subject);
+        const prompt = prompts.map((p) => p.prompt).join("\n");
+        const { text } = await generateText({
+            model: openai("gpt-4o"),
+            // system: `You are EduMetrics, an AI built for the benefit of students and universities.
+            // Gather all the prompts under the course. Anaylze where students fall short the most, as well as where the exceed.
+            // Report this data back to the institution/professor that requested it and provide actions that could be taken to
+            // improve students sucess within for the next semster as well as in a few years.`,
+            system: `You are EduMetrics, an AI designed to gather prompts under an academic institutional course.
+            You will analyze the prompts and report this data back to the academic institution and its faculty.
+            The report should be written in a way to understand what students are struggling with.`,
+            prompt: prompt,
+        });
+        return text;
+    }
+
+    static async getCourseSummary(university: string, course: string) {
+        const subjects = await this.getSubjects(university, course);
+        const subjectSummaries = await Promise.all(subjects.map((subject) => this.getSubjectSummary(university, course, subject)));
+        return subjectSummaries.join("\n");
+    }
+}
+
+// addNewChat({
+//     name: "linear dude",
+//     email: "hanc.llc@gmail.com",
+//     role: "student",
+//     course: "MATH200",
+//     prompts: [],
+// });
+
+// addPrompt({
+//     university: "Drexel",
+//     course: "MATH200",
+//     rating: 3.4,
+//     subtopic: "Gradient",
+//     prompt: "What is a gradient?",
+// });
+
+// EduMetricsAPI.getUniversities().then(console.log);
+// EduMetricsAPI.getCourses("Drexel").then(console.log);
+// EduMetricsAPI.getSubjects("Drexel", "MATH200").then(console.log);
+// EduMetricsAPI.getPrompts("Drexel", "MATH200", "Gradient").then(console.log);
+// EduMetricsAPI.getSubjectAverageRating("Drexel", "MATH200", "Gradient").then(console.log);
+// EduMetricsAPI.getCourseAverageRating("Drexel", "MATH200").then(console.log);
+// EduMetricsAPI.getSubjectSummary("Drexel", "MATH200", "Gradient").then(console.log);
+// EduMetricsAPI.getCourseSummary("Drexel", "MATH200").then(console.log);
