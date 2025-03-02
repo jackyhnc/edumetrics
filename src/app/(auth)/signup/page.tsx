@@ -1,9 +1,10 @@
-'use client';
+"use client";
 
-import React, { useState, useEffect } from 'react';
-import Link from 'next/link';
-import { useSession } from '@/context';
-import { useRouter } from 'next/navigation';
+import React, { useState, useEffect } from "react";
+import Link from "next/link";
+import { useSession } from "@/context";
+import { useRouter } from "next/navigation";
+import { addNewUser } from "@/config/firebase";
 
 interface College {
   id: string;
@@ -14,19 +15,19 @@ interface College {
   zip: string;
 }
 
-type UserRole = 'student' | 'faculty';
+type UserRole = "student" | "faculty";
 
 export default function SignUp() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [error, setError] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState("");
   const [colleges, setColleges] = useState<College[]>([]);
   const [selectedCollege, setSelectedCollege] = useState<College | null>(null);
   const [searchLoading, setSearchLoading] = useState(false);
-  const [userRole, setUserRole] = useState<UserRole>('student');
+  const [userRole, setUserRole] = useState<UserRole>("student");
 
   const { handleSignup } = useSession();
   const router = useRouter();
@@ -43,63 +44,63 @@ export default function SignUp() {
         `https://raw.githubusercontent.com/karllhughes/colleges/refs/heads/master/seeds/files/colleges_2016_03.csv`
       );
       const text = await response.text();
-      
-      const rows = text.split('\n').filter(row => row.trim() !== '');
-      
-      const parsed = rows.slice(1).map(row => {
+
+      const rows = text.split("\n").filter((row) => row.trim() !== "");
+
+      const parsed = rows.slice(1).map((row) => {
         const parts: string[] = [];
-        let currentPart = '';
+        let currentPart = "";
         let inQuotes = false;
-        
+
         for (let i = 0; i < row.length; i++) {
           const char = row[i];
-          
+
           if (char === '"') {
             inQuotes = !inQuotes;
-          } else if (char === ',' && !inQuotes) {
+          } else if (char === "," && !inQuotes) {
             parts.push(currentPart);
-            currentPart = '';
+            currentPart = "";
           } else {
             currentPart += char;
           }
         }
-        
+
         parts.push(currentPart);
-        
-        const cleanParts = parts.map(part => part.trim().replace(/^"|"$/g, ''));
-        
+
+        const cleanParts = parts.map((part) => part.trim().replace(/^"|"$/g, ""));
+
         return {
-          id: cleanParts[0] || '',
-          name: cleanParts[1] || '',
-          address: cleanParts[2] || '',
-          city: cleanParts[3] || '',
-          state: cleanParts[4] || '',
-          zip: cleanParts[5] || ''
+          id: cleanParts[0] || "",
+          name: cleanParts[1] || "",
+          address: cleanParts[2] || "",
+          city: cleanParts[3] || "",
+          state: cleanParts[4] || "",
+          zip: cleanParts[5] || "",
         };
       });
-      
+
       const queryLower = query.toLowerCase();
       const filtered = parsed
-        .filter(college => college.name && college.name.toLowerCase().includes(queryLower))
+        .filter((college) => college.name && college.name.toLowerCase().includes(queryLower))
         .sort((a, b) => {
           const aName = a.name.toLowerCase();
           const bName = b.name.toLowerCase();
-          
+
           if (aName === queryLower) return -1;
           if (bName === queryLower) return 1;
-          
+
           const aStartsWith = aName.startsWith(queryLower);
           const bStartsWith = bName.startsWith(queryLower);
           if (aStartsWith && !bStartsWith) return -1;
           if (!aStartsWith && bStartsWith) return 1;
-          
+
           return a.name.length - b.name.length;
         })
         .slice(0, 50);
-      
+
       setColleges(filtered);
     } catch (error) {
-      console.error('Error fetching colleges:', error);
+      console.error("Error fetching colleges:", error);
       setColleges([]);
     }
     setSearchLoading(false);
@@ -115,29 +116,29 @@ export default function SignUp() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
+    setError("");
     setLoading(true);
 
     // Log the current values when form is submitted
-    console.log('=== Form Submission Values ===');
-    console.log('Selected College:', {
+    console.log("=== Form Submission Values ===");
+    console.log("Selected College:", {
       name: selectedCollege?.name,
       address: selectedCollege?.address,
       city: selectedCollege?.city,
-      state: selectedCollege?.state
+      state: selectedCollege?.state,
     });
-    console.log('User Role:', userRole);
-    console.log('Email:', email);
-    console.log('==========================');
+    console.log("User Role:", userRole);
+    console.log("Email:", email);
+    console.log("==========================");
 
     if (!selectedCollege) {
-      setError('Please select your university');
+      setError("Please select your university");
       setLoading(false);
       return;
     }
 
     if (password !== confirmPassword) {
-      setError('Passwords do not match');
+      setError("Passwords do not match");
       setLoading(false);
       return;
     }
@@ -145,24 +146,16 @@ export default function SignUp() {
     try {
       const user = await handleSignup(email, password);
       if (user) {
-        router.push('/option');
+        router.push("/option");
       } else {
-        setError('Password must be at least 8 characters long and include at least one letter and one special character.');
+        setError(
+          "Password must be at least 8 characters long and include at least one letter and one special character."
+        );
       }
     } catch (err) {
-      setError('An error occurred during signup.');
+      setError("An error occurred during signup.");
     }
     setLoading(false);
-  };
-
-  const handleCollegeSelect = (college: College) => {
-    setSelectedCollege(college);
-    console.log('College Selected:', college.name);
-  };
-
-  const handleRoleChange = (role: UserRole) => {
-    setUserRole(role);
-    console.log('Role Changed:', role);
   };
 
   return (
@@ -179,7 +172,10 @@ export default function SignUp() {
 
       <div className="max-w-md w-full space-y-8 p-8 bg-white/10 rounded-lg shadow-lg shadow-purple-500/30">
         <div className="text-center">
-          <Link href="/" className="text-2xl font-bold bg-gradient-to-r from-white via-purple-400 to-purple-700 text-transparent bg-clip-text drop-shadow-lg">
+          <Link
+            href="/"
+            className="text-2xl font-bold bg-gradient-to-r from-white via-purple-400 to-purple-700 text-transparent bg-clip-text drop-shadow-lg"
+          >
             EduMetrics
           </Link>
           <h2 className="mt-6 text-3xl font-bold text-white">Create your account</h2>
@@ -188,7 +184,9 @@ export default function SignUp() {
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           <div className="space-y-4">
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-white/80">EMAIL ADDRESS</label>
+              <label htmlFor="email" className="block text-sm font-medium text-white/80">
+                EMAIL ADDRESS
+              </label>
               <input
                 id="email"
                 name="email"
@@ -201,7 +199,9 @@ export default function SignUp() {
             </div>
 
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-white/80">PASSWORD</label>
+              <label htmlFor="password" className="block text-sm font-medium text-white/80">
+                PASSWORD
+              </label>
               <input
                 id="password"
                 name="password"
@@ -214,7 +214,9 @@ export default function SignUp() {
             </div>
 
             <div>
-              <label htmlFor="confirmPassword" className="block text-sm font-medium text-white/80">CONFIRM PASSWORD</label>
+              <label htmlFor="confirmPassword" className="block text-sm font-medium text-white/80">
+                CONFIRM PASSWORD
+              </label>
               <input
                 id="confirmPassword"
                 name="confirmPassword"
@@ -227,7 +229,9 @@ export default function SignUp() {
             </div>
 
             <div>
-              <label htmlFor="university" className="block text-sm font-medium text-white/80">SEARCH FOR YOUR UNIVERSITY</label>
+              <label htmlFor="university" className="block text-sm font-medium text-white/80">
+                SEARCH FOR YOUR UNIVERSITY
+              </label>
               <input
                 id="university"
                 type="text"
@@ -252,29 +256,25 @@ export default function SignUp() {
                     <button
                       key={college.id}
                       type="button"
-                      onClick={() => handleCollegeSelect(college)}
+                      onClick={() => setSelectedCollege(college)}
                       className={`w-full text-left px-4 py-3 rounded-md transition-colors ${
                         selectedCollege?.id === college.id
-                          ? 'bg-white/20 text-white'
-                          : 'bg-white/10 text-white/70 hover:bg-white/15'
+                          ? "bg-white/20 text-white"
+                          : "bg-white/10 text-white/70 hover:bg-white/15"
                       }`}
                     >
                       <div className="font-medium">{college.name}</div>
                       <div className="text-sm text-white/50">
-                        {college.address && (
-                          <span>{college.address}</span>
-                        )}
-                        
-                        {college.address && (college.city || college.state || college.zip) && (
-                          <span>, </span>
-                        )}
-                        
+                        {college.address && <span>{college.address}</span>}
+
+                        {college.address && (college.city || college.state || college.zip) && <span>, </span>}
+
                         {(college.city || college.state || college.zip) && (
                           <span>
                             {college.city}
-                            {college.city && college.state && ', '}
+                            {college.city && college.state && ", "}
                             {college.state}
-                            {(college.city || college.state) && college.zip && ' '}
+                            {(college.city || college.state) && college.zip && " "}
                             {college.zip}
                           </span>
                         )}
@@ -284,11 +284,9 @@ export default function SignUp() {
                 </div>
               </div>
             )}
-            
+
             {searchQuery.length >= 2 && colleges.length === 0 && !searchLoading && (
-              <div className="text-white/50 text-center py-3">
-                No universities found matching "{searchQuery}"
-              </div>
+              <div className="text-white/50 text-center py-3">No universities found matching "{searchQuery}"</div>
             )}
 
             <div className="space-y-3">
@@ -298,8 +296,8 @@ export default function SignUp() {
                   <input
                     type="radio"
                     name="role"
-                    checked={userRole === 'student'}
-                    onChange={() => handleRoleChange('student')}
+                    checked={userRole === "student"}
+                    onChange={() => setUserRole("student")}
                     className="w-4 h-4 text-purple-500 bg-white/10 border-white/10 focus:ring-purple-400 focus:ring-offset-black"
                   />
                   <span className="text-white">Student</span>
@@ -308,8 +306,8 @@ export default function SignUp() {
                   <input
                     type="radio"
                     name="role"
-                    checked={userRole === 'faculty'}
-                    onChange={() => handleRoleChange('faculty')}
+                    checked={userRole === "faculty"}
+                    onChange={() => setUserRole("faculty")}
                     className="w-4 h-4 text-purple-500 bg-white/10 border-white/10 focus:ring-purple-400 focus:ring-offset-black"
                   />
                   <span className="text-white">Faculty</span>
@@ -319,33 +317,39 @@ export default function SignUp() {
           </div>
 
           <Link href="/option">
-          <button
-            type="submit"
-            disabled={!selectedCollege}
-            className={`w-full flex justify-center px-4 py-3 rounded-md font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-white/30 ${
-              selectedCollege
-                ? 'bg-white text-black hover:bg-gray-100 transition-colors'
-                : 'bg-white/20 text-white/50 cursor-not-allowed'
-            }`}
-            onClick={() => {
-              
-            }}
-          >
-            Continue
-          </button>
+            <button
+              type="submit"
+              disabled={!selectedCollege}
+              className={`w-full flex justify-center px-4 py-3 rounded-md font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-white/30 ${
+                selectedCollege
+                  ? "bg-white text-black hover:bg-gray-100 transition-colors"
+                  : "bg-white/20 text-white/50 cursor-not-allowed"
+              }`}
+              onClick={() => {
+                console.log("SELECTED:");
+                console.log(selectedCollege?.name);
+                console.log(userRole);
+                addNewUser({
+                  university: selectedCollege!.name,
+                  role: userRole,
+                  email: email,
+                });
+              }}
+            >
+              Continue
+            </button>
           </Link>
         </form>
 
-        {error && (
-          <div className="text-red-500 text-center mt-4">
-            {error}
-          </div>
-        )}
+        {error && <div className="text-red-500 text-center mt-4">{error}</div>}
 
         <div className="text-center text-sm mt-4">
           <p className="text-white/50">
-            Already have an account?{' '}
-            <Link href="/signin" className="font-medium text-white hover:text-white/80">Sign in</Link> instead.
+            Already have an account?{" "}
+            <Link href="/signin" className="font-medium text-white hover:text-white/80">
+              Sign in
+            </Link>{" "}
+            instead.
           </p>
         </div>
       </div>
