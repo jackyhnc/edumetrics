@@ -10,6 +10,8 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
 ## Features
 - Receive AI helper
 - Real-time AI chat
+- Summarizes issues students face with certain topics
+- Gives detail for course improvement
 
 ## API Usage
 ```ts
