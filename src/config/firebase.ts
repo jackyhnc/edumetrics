@@ -210,10 +210,10 @@ export class EduMetricsAPI {
       system: `You are EduMetrics, an AI designed to gather prompts under an academic institutional course.
             You will analyze the prompts and report this data back to the academic institution and its faculty.
             The report should be written in a way to understand what students are struggling with.`,
-      prompt: prompt,
-    });
-    return text;
-  }
+            prompt: prompt,
+        });
+        return text;
+    }
 
   static async getCourseSummary(university: string, course: string) {
     const subjects = await this.getSubjects(university, course);

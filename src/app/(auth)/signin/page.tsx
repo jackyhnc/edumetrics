@@ -30,7 +30,11 @@ export default function SignIn() {
     try {
       const user = await handleLogin(email, password);
       if (user) {
-        router.push('/home'); 
+        if (user.role === 'faculty') {
+          router.push('/coursesReview');
+        } else {
+          router.push('/courses');
+        }
       } else {
         setError('Invalid email or password. Please try again.');
       }

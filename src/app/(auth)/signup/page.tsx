@@ -160,12 +160,15 @@ export default function SignUp() {
     }
 
     try {
-      const user = await handleSignup(email, password, userRole, selectedCollege.name);
-      console.log("USER:", user);
-      if (user && userRole === "faculty") {
-        router.push("/courseReview");
-      } else if (user && userRole === "student") {
-        router.push("/chatbot");
+      const user = await handleSignup(email, password);
+      if (user) {
+        // Redirect based on user role
+        if (userRole === 'faculty') {
+          router.push('/coursesReview');
+        } else {
+          router.push('/courses');
+        }
+        router.push("/option");
       } else {
         setError("Error creating account. Could have been made already.");
       }
@@ -173,6 +176,16 @@ export default function SignUp() {
       setError("An error occurred during signup.");
     }
     setLoading(false);
+  };
+
+  const handleCollegeSelect = (college: College) => {
+    setSelectedCollege(college);
+    console.log('College Selected:', college.name);
+  };
+
+  const handleRoleChange = (role: UserRole) => {
+    setUserRole(role);
+    console.log('Role Changed:', role);
   };
 
   return (
@@ -333,17 +346,22 @@ export default function SignUp() {
             </div>
           </div>
 
+          <Link href="/option">
           <button
             type="submit"
             disabled={!selectedCollege}
             className={`w-full flex justify-center px-4 py-3 rounded-md font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-white/30 ${
               selectedCollege
-                ? "bg-white text-black hover:bg-gray-100 transition-colors"
-                : "bg-white/20 text-white/50 cursor-not-allowed"
+                ? 'bg-white text-black hover:bg-gray-100 transition-colors'
+                : 'bg-white/20 text-white/50 cursor-not-allowed'
             }`}
+            onClick={() => {
+
+            }}
           >
             Continue
           </button>
+          </Link>
         </form>
 
         {error && <div className="text-red-500 text-center mt-4">{error}</div>}

@@ -11,7 +11,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
 
   useEffect(() => {
     if (userData?.role === "faculty") {
-      router.replace("/courseReview");
+      router.replace("/coursesReview");
     } else if (userData?.role === "student") {
       router.replace("/chatbot");
     }

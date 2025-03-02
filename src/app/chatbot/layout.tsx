@@ -100,7 +100,7 @@ export default function ChatbotLayout({ children }: { children: React.ReactNode 
     if (userData?.role == "student") {
       router.replace("/chatbot")
     } else if (userData?.role == "faculty") {
-      router.replace("/courseReview")
+      router.replace("/coursesReview")
     } else if (!user || !userData) {
       router.replace("/signup")
     }
