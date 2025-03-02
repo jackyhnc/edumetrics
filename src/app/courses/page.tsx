@@ -39,7 +39,6 @@ export default function CoursesPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-black">
       <div className="max-w-6xl w-full flex space-x-8 p-8">
-        {/* Left Section */}
         <div className="w-1/2 space-y-8 p-8 bg-white/10 rounded-md">
           <div className="text-center">
             <Link href="/" className="text-3xl font-bold text-white hover:text-white/90 transition-colors">
@@ -74,7 +73,6 @@ export default function CoursesPage() {
           </div>
         </div>
 
-        {/* Right Section - Selected Courses */}
         <div className="w-1/2 p-8 bg-white/10 rounded-md">
           <h3 className="text-3xl font-bold text-white mb-6">Selected Courses</h3>
           <div className="space-y-4 max-h-[400px] overflow-y-auto [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:bg-white/20 [&::-webkit-scrollbar-thumb]:rounded-full">
