@@ -6,7 +6,7 @@ EduMetrics is an intelligent tutoring AI that helps students master difficult su
 
 
 
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+
 
 ## Features
 - Receive AI helper
