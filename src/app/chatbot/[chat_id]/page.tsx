@@ -131,6 +131,7 @@ export default function ChatbotPage() {
     const userQuery = query(collection(db, "users"), where("email", "==", user?.email));
     const userSnapshot = await getDocs(userQuery);
     if (!userSnapshot.empty) {
+      console.log(course)
       const userDoc = userSnapshot.docs[0];
       await setDoc(
         userDoc.ref,
