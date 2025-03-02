@@ -117,6 +117,16 @@ export async function addPrompt(info: DocumentPrompt) {
   });
 }
 
+export async function getChats(info: DocumentUser) {
+  const userRef = await findDoc(collection(db, "users"), "email", info.email);
+  const chatsRef = userRef && (await getDocs(collection(userRef, "chats")));
+
+  if (!chatsRef) {
+    return [];
+  }
+  return chatsRef.docs.map(doc => doc.data());
+}
+
 export class EduMetricsAPI {
   university: string;
   course: string;
