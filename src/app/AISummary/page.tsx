@@ -1,11 +1,18 @@
-'use client';
+"use client";
 
-import React, { useEffect, useState } from 'react';
-import Link from 'next/link';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { EduMetricsAPI } from '@/config/firebase';
-import { TUseSession, useSession } from '@/context';
-import { MemoizedMarkdownBlock } from '@/components/memoized-markdown';
+import React, { useEffect, useState } from "react";
+import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
+import { EduMetricsAPI } from "@/config/firebase";
+import { TUseSession, useSession } from "@/context";
+import { MemoizedMarkdownBlock } from "@/components/memoized-markdown";
+import { useChat } from "@ai-sdk/react";
+import { generateText } from "ai";
+import { createOpenAI } from "@ai-sdk/openai";
+
+const openai = createOpenAI({
+  apiKey: process.env.NEXT_PUBLIC_OPENAI_API_KEY,
+});
 
 interface Prompt {
   prompt: string;
@@ -18,18 +25,25 @@ export default function AISummaryPage() {
 
   const { userData } = useSession() as TUseSession;
 
-  const [courseName, setCourseName] = useState<string>('');
-  const [courseTitle, setCourseTitle] = useState<string>('');
-  const [selectedTopic, setSelectedTopic] = useState<string>('');
+  const [courseName, setCourseName] = useState<string>("");
+  const [courseTitle, setCourseTitle] = useState<string>("");
+  const [selectedTopic, setSelectedTopic] = useState<string>("");
   const [prompts, setPrompts] = useState<Prompt[]>([]);
-  const [summary, setSummary] = useState<string>('Loading analysis...');
+  const [summary, setSummary] = useState<string>("Loading analysis...");
+  const [teachingStrategies, setTeachingStrategies] = useState<string>("Loading teaching strategies...");
+
+  const { messages, status, setMessages } = useChat({
+    id: "chat",
+    // Throttle the messages and data updates to 50ms:
+    experimental_throttle: 50,
+  });
 
   useEffect(() => {
     // Get data from URL parameters
-    const name = searchParams.get('courseName');
-    const title = searchParams.get('courseTitle');
-    const topic = searchParams.get('topic');
-    const promptsData = searchParams.get('prompts');
+    const name = searchParams.get("courseName");
+    const title = searchParams.get("courseTitle");
+    const topic = searchParams.get("topic");
+    const promptsData = searchParams.get("prompts");
 
     if (name) setCourseName(decodeURIComponent(name));
     if (title) setCourseTitle(decodeURIComponent(title));
@@ -40,25 +54,43 @@ export default function AISummaryPage() {
         const parsedPrompts = JSON.parse(decodeURIComponent(promptsData)) as Prompt[];
         setPrompts(parsedPrompts);
       } catch (error) {
-        console.error('Error parsing prompts data:', error);
+        console.error("Error parsing prompts data:", error);
       }
     }
   }, [searchParams]);
 
   useEffect(() => {
-    const fetchSummary = async () => {
+    const fetchData = async () => {
       if (userData && courseName && selectedTopic) {
         try {
-          const text = await EduMetricsAPI.getSubjectSummary(userData.university, courseName, selectedTopic);
+          // Fetch summary
+          let text = await EduMetricsAPI.getSubjectSummary(userData.university, courseName, selectedTopic);
+          text = `#### Institution: ${
+            userData.university
+          }\n#### Course: ${courseName}\n#### Date: ${new Date().toLocaleDateString("en-US")}\n---\n${text}`;
           setSummary(text);
+
+          // Fetch teaching strategies
+          const { text: strategies } = await generateText({
+            model: openai("gpt-4"),
+            system: `You are an expert in education and pedagogy. Analyze the given topic and provide specific, actionable teaching strategies that would be most effective for this subject matter. Focus on:
+            1. Best teaching methods for this specific topic
+            2. Common student misconceptions and how to address them
+            3. Practical examples and real-world applications
+            4. Assessment strategies
+            Keep the response concise and practical.`,
+            prompt: `Please provide teaching strategies for ${selectedTopic} in ${courseName}.`,
+          });
+          setTeachingStrategies(strategies);
         } catch (error) {
-          console.error('Error fetching summary:', error);
-          setSummary('Failed to load analysis.');
+          console.error("Error fetching data:", error);
+          setSummary("Failed to load analysis.");
+          setTeachingStrategies("Failed to load teaching strategies.");
         }
       }
     };
 
-    fetchSummary();
+    fetchData();
   }, [userData, courseName, selectedTopic]);
 
   return (
@@ -102,6 +134,28 @@ export default function AISummaryPage() {
               )}
             </div>
 
+            <div
+              className="bg-white/10 rounded-lg p-6 shadow-lg shadow-purple-500/20 animate-fadeIn"
+              style={{ animationDelay: "0.2s" }}
+            >
+              <h4 className="text-xl font-bold text-purple-300 mb-6">AI Analysis</h4>
+              <div className="space-y-6">
+                <div className="bg-white/15 rounded-lg p-6">
+                  <h5 className="text-lg font-medium mb-4">Teaching Strategies</h5>
+                  <div className="leading-relaxed space-y-4">
+                    <MemoizedMarkdownBlock content={teachingStrategies} />
+                  </div>
+                </div>
+
+                <div className="bg-white/15 rounded-lg p-6 space-y-2">
+                  <h5 className="text-lg font-medium mb-4">Topic Coverage</h5>
+                  <div className="leading-relaxed space-y-4">
+                    <MemoizedMarkdownBlock content={summary} />
+                  </div>
+                </div>
+              </div>
+            </div>
+
             {prompts.length > 0 && (
               <div
                 className="bg-white/10 rounded-lg p-6 shadow-lg shadow-purple-500/20 animate-fadeIn"
@@ -111,73 +165,12 @@ export default function AISummaryPage() {
                 <div className="space-y-6">
                   {prompts.map((prompt, index) => (
                     <div key={index} className="bg-white/15 rounded-lg p-6 transition-all hover-scale shadow-md">
-                      <div className="flex justify-between items-start mb-4">
-                        <div className="flex items-center bg-white/20 px-2 py-1 rounded">
-                          <svg className="w-4 h-4 text-yellow-400 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                          </svg>
-                          <span>Effectiveness: {prompt.rating}</span>
-                        </div>
-                      </div>
                       <p className="text-white/90">{prompt.prompt}</p>
                     </div>
                   ))}
                 </div>
               </div>
             )}
-
-            <div
-              className="bg-white/10 rounded-lg p-6 shadow-lg shadow-purple-500/20 animate-fadeIn"
-              style={{ animationDelay: "0.2s" }}
-            >
-              <h4 className="text-xl font-bold text-purple-300 mb-6">AI Analysis</h4>
-              <div className="space-y-6">
-                <div className="bg-white/15 rounded-lg p-6">
-                  <h5 className="text-lg font-medium mb-4">Learning Effectiveness</h5>
-                  <p className="text-white/90 mb-4">
-                    Based on the prompts and topics selected, this course material appears to be structured to build
-                    from fundamentals to practical applications.
-                  </p>
-                  <div className="w-full bg-white/10 rounded-full h-2.5 mb-4">
-                    <div className="bg-purple-600 h-2.5 rounded-full" style={{ width: "85%" }}></div>
-                  </div>
-                  <p className="text-white/70 text-sm">85% effectiveness score</p>
-                </div>
-
-                <div className="bg-white/15 rounded-lg p-6">
-                  <h5 className="text-lg font-medium mb-4">Topic Coverage</h5>
-                  {/* <p className="text-white/90 mb-4"> */}
-                    <MemoizedMarkdownBlock content={summary} />
-                  {/* </p> */}
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
-                    <div className="bg-white/10 p-3 rounded-lg">
-                      <div className="text-center">
-                        <div className="inline-block w-16 h-16 rounded-full bg-white/10 flex items-center justify-center mb-2">
-                          <span className="text-xl font-bold">75%</span>
-                        </div>
-                        <p className="text-sm text-white/70">Fundamentals</p>
-                      </div>
-                    </div>
-                    <div className="bg-white/10 p-3 rounded-lg">
-                      <div className="text-center">
-                        <div className="inline-block w-16 h-16 rounded-full bg-white/10 flex items-center justify-center mb-2">
-                          <span className="text-xl font-bold">60%</span>
-                        </div>
-                        <p className="text-sm text-white/70">Advanced</p>
-                      </div>
-                    </div>
-                    <div className="bg-white/10 p-3 rounded-lg">
-                      <div className="text-center">
-                        <div className="inline-block w-16 h-16 rounded-full bg-white/10 flex items-center justify-center mb-2">
-                          <span className="text-xl font-bold">80%</span>
-                        </div>
-                        <p className="text-sm text-white/70">Practical</p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
           </div>
         ) : (
           <div className="text-center py-12 text-white/70 animate-fadeIn">

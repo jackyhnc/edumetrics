@@ -22,11 +22,11 @@ export default function ChatbotPage() {
   const { chat_id } = useParams<{ chat_id: string }>() || { chat_id: "" };
   const { userData, user } = useSession() as TUseSession;
 
-  const [choosingCourse, setChoosingCourse] = useState("")
-  const [course, setCourse] = useState<string | undefined>(undefined)
-  const [newCourse, setNewCourse] = useState<string | undefined>(undefined)
-  const [addCourseError, setAddCourseError] = useState<string>("")
-  const [chatData, setChatData] = useState("")
+  const [choosingCourse, setChoosingCourse] = useState("");
+  const [course, setCourse] = useState<string | undefined>(undefined);
+  const [newCourse, setNewCourse] = useState<string | undefined>(undefined);
+  const [addCourseError, setAddCourseError] = useState<string>("");
+  const [chatData, setChatData] = useState("");
 
   const [initialMessages, setInitialMessages] = useState<DocumentChat["prompts"] | undefined>(undefined);
   useEffect(() => {
@@ -38,33 +38,33 @@ export default function ChatbotPage() {
           university: userData.university!,
           role: userData.role!,
         });
-        console.log(res)
+        console.log(res);
         if (res) {
-          const newRes = res.find(doc => doc.id === chat_id);
-          setMessages((newRes as DocumentChat).prompts)
-          setCourse((newRes as DocumentChat).course)
-          setChatData((newRes as DocumentChat).name)
+          const newRes = res.find((doc) => doc.id === chat_id);
+          setMessages((newRes as DocumentChat).prompts);
+          setCourse((newRes as DocumentChat).course);
+          setChatData((newRes as DocumentChat).name);
         } else {
           console.error("Failed to retrieve chat data.");
         }
       } else {
-        console.log("no user")
+        console.log("no user");
       }
     }
-    hook().catch(error => {
+    hook().catch((error) => {
       console.error("Error in hook:", error);
     });
   }, [chat_id, user, userData]);
 
   const { messages, status, setMessages } = useChat({
-    id: 'chat',
+    id: "chat",
     // Throttle the messages and data updates to 50ms:
     experimental_throttle: 50,
   });
 
   useEffect(() => {
     if (status === "ready" && messages.length >= 2) {
-      console.log(messages)
+      console.log(messages);
       const prompt = messages[messages.length - 2].content;
 
       generateObject({
@@ -93,14 +93,14 @@ export default function ChatbotPage() {
 
           name: name, // Fixed: Changed 'object.name' to 'name'
           course: course,
-          prompts: messages.map(message => {
+          prompts: messages.map((message) => {
             return {
               id: message.id,
               content: message.content,
               role: message.role,
-            }
-          })
-        })
+            };
+          }),
+        });
 
         addPrompt({
           university: userData.university,
@@ -132,7 +132,7 @@ export default function ChatbotPage() {
     const userQuery = query(collection(db, "users"), where("email", "==", user?.email));
     const userSnapshot = await getDocs(userQuery);
     if (!userSnapshot.empty) {
-      console.log(course)
+      console.log(course);
       const userDoc = userSnapshot.docs[0];
       await setDoc(
         userDoc.ref,
@@ -147,14 +147,13 @@ export default function ChatbotPage() {
 
   return (
     <>
-      {chatData ?
+      {chatData ? (
         <div className="h-14 sticky top-0 z-100 mb-6 text-xl bg-gray-100 flex items-center justify-center">
           {`${chatData} (${course})`}
         </div>
-        :
-        <div className="h-14 sticky top-0 z-100 mb-6 text-xl flex items-center justify-center">
-        </div>
-      }
+      ) : (
+        <div className="h-14 sticky top-0 z-100 mb-6 text-xl flex items-center justify-center"></div>
+      )}
       <div className="flex flex-col w-full max-w-3xl px-24 pb-14 mb-18 mx-auto stretch">
         {course && course.length > 0 ? (
           <>
