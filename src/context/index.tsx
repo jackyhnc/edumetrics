@@ -36,11 +36,10 @@ export function SessionProvided(props: { children: React.ReactNode }) {
 
     const unsubscribe = onSnapshot(userDocRef, async (snapshot) => {
       const userSnapData = snapshot.docs[0]?.data();
-      console.log(userSnapData)
       const userDoc: TUser = {
-        chats: userSnapData?.chats,
+        chats: userSnapData?.chats ?? [],
         role: userSnapData?.role,
-        courses: userSnapData?.courses,
+        courses: userSnapData?.courses ?? [],
         university: userSnapData?.university,
       }
       setUserData(userDoc)

@@ -91,15 +91,18 @@ const Sidebar = () => {
 };
 
 export default function ChatbotLayout({ children }: { children: React.ReactNode }) {
-  const { userData } = useSession() as TUseSession
-
+  const { userData, user } = useSession() as TUseSession
   const router = useRouter()
+  console.log(userData)
+  console.log(user)
 
   useEffect(() => {
     if (userData?.role == "student") {
       router.replace("/chatbot")
     } else if (userData?.role == "faculty") {
       router.replace("/courseReview")
+    } else if (!user || !userData) {
+      router.replace("/signup")
     }
   },[])
 

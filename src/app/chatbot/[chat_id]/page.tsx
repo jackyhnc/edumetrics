@@ -22,15 +22,11 @@ export default function ChatbotPage() {
   const { chat_id } = useParams<{ chat_id: string }>() || { chat_id: "" };
   const { userData, user } = useSession() as TUseSession;
 
-  const [choosingCourse, setChoosingCourse] = useState("");
-  const [course, setCourse] = useState<string | undefined>(undefined);
-  const [newCourse, setNewCourse] = useState<string | undefined>(undefined);
-  const [addCourseError, setAddCourseError] = useState<string>("");
-
-  useEffect(() => {
-    console.log(course);
-  }, [course]);
-  const [chatData, setChatData] = useState<TChat | undefined>(undefined);
+  const [choosingCourse, setChoosingCourse] = useState("")
+  const [course, setCourse] = useState<string | undefined>(undefined)
+  const [newCourse, setNewCourse] = useState<string | undefined>(undefined)
+  const [addCourseError, setAddCourseError] = useState<string>("")
+  const [chatData, setChatData] = useState<TChat | undefined>(undefined)
 
   useEffect(() => {
     setChatData(userData?.chats.find((chat) => chat.id === chat_id));
@@ -40,14 +36,27 @@ export default function ChatbotPage() {
     }
   }, [router, chat_id, userData?.chats]);
 
+  const [initialMessages, setInitialMessages] = useState("")
+  useEffect(() => {
+    if (!user) return
+    userData?.chats
+    const userDocRef = query(collection(db, "users"), where("email", "==", user.email!));
+
+    //collection(userDocRef, "chats")
+  })
+
   const { messages, status } = useChat({
-    id: "chat",
+    id: 'chat',
     // Throttle the messages and data updates to 50ms:
     experimental_throttle: 50,
+    onFinish: (message) => {
+      console.log("alskdjflajsdfj");
+    }
   });
 
   useEffect(() => {
-    if (status === "ready") {
+    if (status === "ready" && messages.length >= 2) {
+      console.log(messages)
       const prompt = messages[messages.length - 2].content;
 
       generateObject({
@@ -65,6 +74,10 @@ export default function ChatbotPage() {
         console.log("SUBTOPIC:", subtopic);
         console.log("CHAT_NAME:", name);
         console.log("ADDED:", prompt);
+
+        addNewChat({
+          id: 
+        })
 
         addPrompt({
           university: userData.university,
@@ -170,9 +183,9 @@ export default function ChatbotPage() {
                 })}
               </div>
             </div>
-            <div className="w-full">
+            <div className="w-full space-y-1">
               <div className="">Have another course that's not on here?</div>
-              <div className="flex gap-2 items-center">
+              <div className="flex gap-3 items-center">
                 <input
                   type="text"
                   placeholder="Enter new course"

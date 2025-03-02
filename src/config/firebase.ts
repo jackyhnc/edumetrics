@@ -11,7 +11,7 @@ import {
 } from "firebase/firestore";
 import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
-import { generateText } from "ai";
+import { generateText, UIMessage } from "ai";
 import { openai } from "@ai-sdk/openai";
 import firebaseConfig from "./firebase.json";
 
@@ -40,12 +40,14 @@ interface Prompt {
   attachments?: unknown;
 }
 
-interface DocumentChat {
+interface DocumentChat extends DocumentUser {
   name: string;
-  email: string;
-  role: string;
   course: string;
-  prompts: Prompt[];
+  prompts: Array<{
+    id: string;
+    content: string;
+    role: 'system' | 'user' | 'assistant' | 'data';
+  }>;
 }
 
 async function findDoc(
@@ -76,18 +78,16 @@ export async function addNewUser(docInfo: DocumentUser) {
   const usersRef = collection(db, "users");
 
   return await findOrCreateDoc(usersRef, "email", docInfo.email, {
-    chats: [],
     role: docInfo.role,
-    courses: [],
     university: docInfo.university,
   });
 }
 
 export async function addNewChat(info: DocumentChat) {
-  const usersRef = collection(db, "users");
-
   // Find or create user
-  const userRef = await findOrCreateDoc(usersRef, "email", info.email, {
+  const userRef = await addNewUser({
+    email: info.email,
+    university: info.university,
     role: info.role,
   });
 
@@ -97,6 +97,7 @@ export async function addNewChat(info: DocumentChat) {
   const chatRef = await findOrCreateDoc(chatsRef, "name", info.name, {
     course: info.course,
     prompts: info.prompts,
+    id: info.id,
   });
 
   return chatRef;
