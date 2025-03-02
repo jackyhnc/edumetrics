@@ -1,9 +1,10 @@
-# Edumetrics
+# EduMetrics
 
 EduMetrics - Empowering Schools with AI-Driven Learning Analytics
 
 EduMetrics is an AI-powered analytics platform and tutoring chatbot that helps universities identify student learning challenges through real-time data insights. By analyzing student interactions with their AI tutor, we track learning patterns, pinpoint struggles, and provide institutions with actionable data to enhance curricula and support student success. EduMetrics offers an intuitive web application for students and faculty, along with a user-friendly API for seamless integration.
 
+<img width="1412" alt="image" src="https://github.com/user-attachments/assets/970e1aef-962e-4c9c-b6c1-2df82978ec7f" />
 
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
