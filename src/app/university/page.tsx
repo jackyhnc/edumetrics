@@ -6,7 +6,10 @@ import Link from 'next/link';
 interface College {
   id: string;
   name: string;
-  location: string;
+  address: string;
+  city: string;
+  state: string;
+  zip: string;
 }
 
 export default function UniversitySelection() {
@@ -24,15 +27,71 @@ export default function UniversitySelection() {
     setLoading(true);
     try {
       const response = await fetch(
-        `https://raw.githubusercontent.com/karllhughes/colleges/master/seeds/colleges.json`
+        `https://raw.githubusercontent.com/karllhughes/colleges/refs/heads/master/seeds/files/colleges_2016_03.csv`
       );
-      const data = await response.json();
-      const filtered = data.filter((college: College) =>
-        college.name.toLowerCase().includes(query.toLowerCase())
-      ).slice(0, 10);
+      const text = await response.text();
+      
+      // Parse 
+      const rows = text.split('\n').filter(row => row.trim() !== '');
+      
+      // 140890,University of Pennsylvania,3451 Walnut Street,Philadelphia,PA,19104-6303,US,"Philadelphia, PA",215-898-5000,337800,215062,www.upenn.edu
+      // 0=ID, 1=Name, 2=Address, 3=City, 4=State, 5=Zip Code
+      
+      const parsed = rows.slice(1).map(row => {
+        const parts: string[] = [];
+        let currentPart = '';
+        let inQuotes = false;
+        
+        for (let i = 0; i < row.length; i++) {
+          const char = row[i];
+          
+          if (char === '"') {
+            inQuotes = !inQuotes;
+          } else if (char === ',' && !inQuotes) {
+            parts.push(currentPart);
+            currentPart = '';
+          } else {
+            currentPart += char;
+          }
+        }
+        
+        parts.push(currentPart);
+        
+        const cleanParts = parts.map(part => part.trim().replace(/^"|"$/g, ''));
+        
+        return {
+          id: cleanParts[0] || '',
+          name: cleanParts[1] || '',
+          address: cleanParts[2] || '',
+          city: cleanParts[3] || '',
+          state: cleanParts[4] || '',
+          zip: cleanParts[5] || ''
+        };
+      });
+      
+      const queryLower = query.toLowerCase();
+      const filtered = parsed
+        .filter(college => college.name && college.name.toLowerCase().includes(queryLower))
+        .sort((a, b) => {
+          const aName = a.name.toLowerCase();
+          const bName = b.name.toLowerCase();
+          
+          if (aName === queryLower) return -1;
+          if (bName === queryLower) return 1;
+          
+          const aStartsWith = aName.startsWith(queryLower);
+          const bStartsWith = bName.startsWith(queryLower);
+          if (aStartsWith && !bStartsWith) return -1;
+          if (!aStartsWith && bStartsWith) return 1;
+          
+          return a.name.length - b.name.length;
+        })
+        .slice(0, 50);
+      
       setColleges(filtered);
     } catch (error) {
       console.error('Error fetching colleges:', error);
+      setColleges([]);
     }
     setLoading(false);
   };
@@ -48,9 +107,9 @@ export default function UniversitySelection() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (selectedCollege) {
-      // TODO: Save selected college to user profile
+      // save users selected college
       console.log('Selected college:', selectedCollege);
-      // Redirect to dashboard or next step
+      // direct to course load 
     }
   };
 
@@ -67,7 +126,7 @@ export default function UniversitySelection() {
           </p>
         </div>
 
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
+        <form className="mt-8 space-y-4" onSubmit={handleSubmit}>
           <div className="space-y-4">
             <div>
               <label htmlFor="university" className="block text-sm font-medium text-white/80">
@@ -84,32 +143,59 @@ export default function UniversitySelection() {
             </div>
 
             {loading && (
-              <div className="text-white/70 text-center">
+              <div className="text-white/70 text-center py-2">
+                <div className="inline-block animate-spin h-5 w-5 border-2 border-white/20 border-t-white/80 rounded-full mr-2"></div>
                 Searching...
               </div>
             )}
 
-            {colleges.length > 0 && (
-              <div className="mt-2 space-y-2">
-                {colleges.map((college) => (
-                  <button
-                    key={college.id}
-                    type="button"
-                    onClick={() => setSelectedCollege(college)}
-                    className={`w-full text-left px-4 py-3 rounded-md transition-colors ${
-                      selectedCollege?.id === college.id
-                        ? 'bg-white/20 text-white'
-                        : 'bg-white/10 text-white/70 hover:bg-white/15'
-                    }`}
-                  >
-                    <div className="font-medium">{college.name}</div>
-                    <div className="text-sm text-white/50">{college.location}</div>
-                  </button>
-                ))}
+            {colleges.length > 0 && !loading && (
+              <div className="mt-2 max-h-[300px] overflow-y-auto [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:bg-white/20 [&::-webkit-scrollbar-thumb]:rounded-full">
+                <div className="space-y-2 [&:has(>:nth-child(4))]:pr-4">
+                  {colleges.map((college) => (
+                    <button
+                      key={college.id}
+                      type="button"
+                      onClick={() => setSelectedCollege(college)}
+                      className={`w-full text-left px-4 py-3 rounded-md transition-colors ${
+                        selectedCollege?.id === college.id
+                          ? 'bg-white/20 text-white'
+                          : 'bg-white/10 text-white/70 hover:bg-white/15'
+                      }`}
+                    >
+                      <div className="font-medium">{college.name}</div>
+                      <div className="text-sm text-white/50">
+                        {college.address && (
+                          <span>{college.address}</span>
+                        )}
+                        
+                        {college.address && (college.city || college.state || college.zip) && (
+                          <span>, </span>
+                        )}
+                        
+                        {(college.city || college.state || college.zip) && (
+                          <span>
+                            {college.city}
+                            {college.city && college.state && ', '}
+                            {college.state}
+                            {(college.city || college.state) && college.zip && ' '}
+                            {college.zip}
+                          </span>
+                        )}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+            
+            {searchQuery.length >= 2 && colleges.length === 0 && !loading && (
+              <div className="text-white/50 text-center py-3">
+                No universities found matching "{searchQuery}"
               </div>
             )}
           </div>
-
+          <Link href="/option">
           <button
             type="submit"
             disabled={!selectedCollege}
@@ -121,8 +207,9 @@ export default function UniversitySelection() {
           >
             Continue
           </button>
+          </Link>
         </form>
       </div>
     </div>
   );
-} 
+}

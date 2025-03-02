@@ -105,7 +105,8 @@ export type TUseSession = {
   logout: () => {}
   userData: TUser | null,
 }
-type TChat = {
+
+export type TChat = {
   course: string;
   id: string;
   prompts: Array<{
