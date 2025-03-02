@@ -145,7 +145,12 @@ export default function SignUp() {
     try {
       const user = await handleSignup(email, password);
       if (user) {
-        router.push('/option');
+        // Redirect based on user role
+        if (userRole === 'faculty') {
+          router.push('/coursesReview');
+        } else {
+          router.push('/courses');
+        }
       } else {
         setError('Password must be at least 8 characters long and include at least one letter and one special character.');
       }
@@ -157,6 +162,7 @@ export default function SignUp() {
 
   const handleCollegeSelect = (college: College) => {
     setSelectedCollege(college);
+    setSearchQuery(college.name);
     console.log('College Selected:', college.name);
   };
 
@@ -318,7 +324,6 @@ export default function SignUp() {
             </div>
           </div>
 
-          <Link href="/option">
           <button
             type="submit"
             disabled={!selectedCollege}
@@ -327,13 +332,9 @@ export default function SignUp() {
                 ? 'bg-white text-black hover:bg-gray-100 transition-colors'
                 : 'bg-white/20 text-white/50 cursor-not-allowed'
             }`}
-            onClick={() => {
-              
-            }}
           >
             Continue
           </button>
-          </Link>
         </form>
 
         {error && (

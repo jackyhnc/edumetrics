@@ -179,7 +179,9 @@ export class EduMetricsAPI {
             // improve students sucess within for the next semster as well as in a few years.`,
             system: `You are EduMetrics, an AI designed to gather prompts under an academic institutional course.
             You will analyze the prompts and report this data back to the academic institution and its faculty.
-            The report should be written in a way to understand what students are struggling with.`,
+            The report should be written in a way to understand what students are struggling with.
+            This report should include feasible actions that could be taken to improve student success within the next semester, and the next years.
+            Provide near instant solutions as well as  actionable steps that could be taken over the next few days, weeks, and months.`,
             prompt: prompt,
         });
         return text;
