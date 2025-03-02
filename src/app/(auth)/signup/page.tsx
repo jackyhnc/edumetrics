@@ -1,9 +1,20 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useSession } from '@/context';
 import { useRouter } from 'next/navigation';
+
+interface College {
+  id: string;
+  name: string;
+  address: string;
+  city: string;
+  state: string;
+  zip: string;
+}
+
+type UserRole = 'student' | 'faculty';
 
 export default function SignUp() {
   const [email, setEmail] = useState('');
@@ -11,14 +22,119 @@ export default function SignUp() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [colleges, setColleges] = useState<College[]>([]);
+  const [selectedCollege, setSelectedCollege] = useState<College | null>(null);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [userRole, setUserRole] = useState<UserRole>('student');
 
   const { handleSignup } = useSession();
   const router = useRouter();
+
+  const searchColleges = async (query: string) => {
+    if (query.length < 2) {
+      setColleges([]);
+      return;
+    }
+
+    setSearchLoading(true);
+    try {
+      const response = await fetch(
+        `https://raw.githubusercontent.com/karllhughes/colleges/refs/heads/master/seeds/files/colleges_2016_03.csv`
+      );
+      const text = await response.text();
+      
+      const rows = text.split('\n').filter(row => row.trim() !== '');
+      
+      const parsed = rows.slice(1).map(row => {
+        const parts: string[] = [];
+        let currentPart = '';
+        let inQuotes = false;
+        
+        for (let i = 0; i < row.length; i++) {
+          const char = row[i];
+          
+          if (char === '"') {
+            inQuotes = !inQuotes;
+          } else if (char === ',' && !inQuotes) {
+            parts.push(currentPart);
+            currentPart = '';
+          } else {
+            currentPart += char;
+          }
+        }
+        
+        parts.push(currentPart);
+        
+        const cleanParts = parts.map(part => part.trim().replace(/^"|"$/g, ''));
+        
+        return {
+          id: cleanParts[0] || '',
+          name: cleanParts[1] || '',
+          address: cleanParts[2] || '',
+          city: cleanParts[3] || '',
+          state: cleanParts[4] || '',
+          zip: cleanParts[5] || ''
+        };
+      });
+      
+      const queryLower = query.toLowerCase();
+      const filtered = parsed
+        .filter(college => college.name && college.name.toLowerCase().includes(queryLower))
+        .sort((a, b) => {
+          const aName = a.name.toLowerCase();
+          const bName = b.name.toLowerCase();
+          
+          if (aName === queryLower) return -1;
+          if (bName === queryLower) return 1;
+          
+          const aStartsWith = aName.startsWith(queryLower);
+          const bStartsWith = bName.startsWith(queryLower);
+          if (aStartsWith && !bStartsWith) return -1;
+          if (!aStartsWith && bStartsWith) return 1;
+          
+          return a.name.length - b.name.length;
+        })
+        .slice(0, 50);
+      
+      setColleges(filtered);
+    } catch (error) {
+      console.error('Error fetching colleges:', error);
+      setColleges([]);
+    }
+    setSearchLoading(false);
+  };
+
+  useEffect(() => {
+    const debounceTimer = setTimeout(() => {
+      searchColleges(searchQuery);
+    }, 300);
+
+    return () => clearTimeout(debounceTimer);
+  }, [searchQuery]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setLoading(true);
+
+    // Log the current values when form is submitted
+    console.log('=== Form Submission Values ===');
+    console.log('Selected College:', {
+      name: selectedCollege?.name,
+      address: selectedCollege?.address,
+      city: selectedCollege?.city,
+      state: selectedCollege?.state
+    });
+    console.log('User Role:', userRole);
+    console.log('Email:', email);
+    console.log('==========================');
+
+    if (!selectedCollege) {
+      setError('Please select your university');
+      setLoading(false);
+      return;
+    }
 
     if (password !== confirmPassword) {
       setError('Passwords do not match');
@@ -29,7 +145,7 @@ export default function SignUp() {
     try {
       const user = await handleSignup(email, password);
       if (user) {
-        router.push('/university');
+        router.push('/option');
       } else {
         setError('Password must be at least 8 characters long and include at least one letter and one special character.');
       }
@@ -37,6 +153,16 @@ export default function SignUp() {
       setError('An error occurred during signup.');
     }
     setLoading(false);
+  };
+
+  const handleCollegeSelect = (college: College) => {
+    setSelectedCollege(college);
+    console.log('College Selected:', college.name);
+  };
+
+  const handleRoleChange = (role: UserRole) => {
+    setUserRole(role);
+    console.log('Role Changed:', role);
   };
 
   return (
@@ -99,13 +225,115 @@ export default function SignUp() {
                 className="mt-1 block w-full px-4 py-3 bg-white/10 border border-white/10 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent"
               />
             </div>
+
+            <div>
+              <label htmlFor="university" className="block text-sm font-medium text-white/80">SEARCH FOR YOUR UNIVERSITY</label>
+              <input
+                id="university"
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Type to search..."
+                className="mt-1 block w-full px-4 py-3 bg-white/10 border border-white/10 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent placeholder-white/30"
+              />
+            </div>
+
+            {searchLoading && (
+              <div className="text-white/70 text-center py-2">
+                <div className="inline-block animate-spin h-5 w-5 border-2 border-white/20 border-t-white/80 rounded-full mr-2"></div>
+                Searching...
+              </div>
+            )}
+
+            {colleges.length > 0 && !searchLoading && (
+              <div className="mt-2 max-h-[200px] overflow-y-auto [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:bg-white/20 [&::-webkit-scrollbar-thumb]:rounded-full">
+                <div className="space-y-2 [&:has(>:nth-child(4))]:pr-4">
+                  {colleges.map((college) => (
+                    <button
+                      key={college.id}
+                      type="button"
+                      onClick={() => handleCollegeSelect(college)}
+                      className={`w-full text-left px-4 py-3 rounded-md transition-colors ${
+                        selectedCollege?.id === college.id
+                          ? 'bg-white/20 text-white'
+                          : 'bg-white/10 text-white/70 hover:bg-white/15'
+                      }`}
+                    >
+                      <div className="font-medium">{college.name}</div>
+                      <div className="text-sm text-white/50">
+                        {college.address && (
+                          <span>{college.address}</span>
+                        )}
+                        
+                        {college.address && (college.city || college.state || college.zip) && (
+                          <span>, </span>
+                        )}
+                        
+                        {(college.city || college.state || college.zip) && (
+                          <span>
+                            {college.city}
+                            {college.city && college.state && ', '}
+                            {college.state}
+                            {(college.city || college.state) && college.zip && ' '}
+                            {college.zip}
+                          </span>
+                        )}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+            
+            {searchQuery.length >= 2 && colleges.length === 0 && !searchLoading && (
+              <div className="text-white/50 text-center py-3">
+                No universities found matching "{searchQuery}"
+              </div>
+            )}
+
+            <div className="space-y-3">
+              <label className="block text-sm font-medium text-white/80">I AM A</label>
+              <div className="flex space-x-4">
+                <label className="flex items-center space-x-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="role"
+                    checked={userRole === 'student'}
+                    onChange={() => handleRoleChange('student')}
+                    className="w-4 h-4 text-purple-500 bg-white/10 border-white/10 focus:ring-purple-400 focus:ring-offset-black"
+                  />
+                  <span className="text-white">Student</span>
+                </label>
+                <label className="flex items-center space-x-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="role"
+                    checked={userRole === 'faculty'}
+                    onChange={() => handleRoleChange('faculty')}
+                    className="w-4 h-4 text-purple-500 bg-white/10 border-white/10 focus:ring-purple-400 focus:ring-offset-black"
+                  />
+                  <span className="text-white">Faculty</span>
+                </label>
+              </div>
+            </div>
           </div>
 
-          <div>
-            <button type="submit" className="w-full px-4 py-3 bg-white text-black hover:bg-purple-200 transition-colors rounded-md font-medium">
-              Create account
-            </button>
-          </div>
+          <Link href="/option">
+          <button
+            type="submit"
+            disabled={!selectedCollege}
+            className={`w-full flex justify-center px-4 py-3 rounded-md font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-white/30 ${
+              selectedCollege
+                ? 'bg-white text-black hover:bg-gray-100 transition-colors'
+                : 'bg-white/20 text-white/50 cursor-not-allowed'
+            }`}
+            onClick={() => {
+              
+            }}
+          >
+            Continue
+          </button>
+          </Link>
         </form>
 
         {error && (
