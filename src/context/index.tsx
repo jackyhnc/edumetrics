@@ -30,14 +30,12 @@ export function SessionProvided(props: { children: React.ReactNode }) {
       setUserData(undefined)
       return
     }
-    
 
     const userDocRef = query(collection(db, "users"), where("email", "==", user.email!));
-
     const unsubscribe = onSnapshot(userDocRef, async (snapshot) => {
       const userSnapData = snapshot.docs[0]?.data();
       const userDoc: TUser = {
-        chats: userSnapData?.chats ?? [],
+        chats: userSnapData?.chats ?? ["this doesnt matter "],
         role: userSnapData?.role,
         courses: userSnapData?.courses ?? [],
         university: userSnapData?.university,
@@ -63,6 +61,7 @@ export function SessionProvided(props: { children: React.ReactNode }) {
 
     try {
       const response = await createUserWithEmailAndPassword(auth, email, password);
+      console.log(response)
       addNewUser({
         university: selectedCollege,
         role: role,

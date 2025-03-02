@@ -8,6 +8,7 @@ import {
   query,
   where,
   DocumentReference,
+  setDoc,
 } from "firebase/firestore";
 import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
@@ -39,7 +40,8 @@ interface DocumentPrompt extends DocumentCourse {
   rating: number;
 }
 
-interface DocumentChat extends DocumentUser {
+export interface DocumentChat extends DocumentUser {
+  id: string;
   name: string;
   course: string;
   prompts: Array<{
@@ -90,14 +92,32 @@ export async function addNewChat(info: DocumentChat) {
     role: info.role,
   });
 
-  // Check if chat exists
-  const chatRef = await findOrCreateDoc(collection(userRef, "chats"), "name", info.name, {
-    course: info.course,
-    prompts: info.prompts,
-  });
+  const chatsRef = collection(userRef, "chats");
 
-  return chatRef;
+  // Check if chat exists
+  const chatRef = await findDoc(chatsRef, "id", info.id);
+
+  if (chatRef) {
+    // If chat exists, update it
+    await setDoc(chatRef, {
+      course: info.course,
+      prompts: info.prompts,
+      id: info.id,
+      name: info.name,
+    });
+  } else {
+    // If chat does not exist, create it
+    await addDoc(chatsRef, {
+      course: info.course,
+      prompts: info.prompts,
+      id: info.id,
+      name: info.name,
+    });
+  }
+
+  return chatRef || (await findDoc(chatsRef, "id", info.id));
 }
+
 
 export async function addNewCourse(info: DocumentCourse) {
   const uniRef = await findOrCreateDoc(collection(db, "universities"), "name", info.university);
@@ -114,7 +134,11 @@ export async function addPrompt(info: DocumentPrompt) {
   });
 }
 
-export async function getChats(info: DocumentUser) {
+interface DocumentUserChats extends DocumentUser {
+    id: string
+}
+
+export async function getChats(info: DocumentUserChats) {
   const userRef = await findDoc(collection(db, "users"), "email", info.email);
   const chatsRef = userRef && (await getDocs(collection(userRef, "chats")));
 
