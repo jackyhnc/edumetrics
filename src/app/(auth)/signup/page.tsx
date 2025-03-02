@@ -40,20 +40,20 @@ export default function SignUp() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-black relative">
+    <div className="min-h-screen flex items-center justify-center bg-black relative overflow-hidden">
       {loading && (
-        <div className="absolute inset-0 flex items-center justify-center bg-black/70 backdrop-blur-md transition-opacity animate-fadeIn">
+        <div className="absolute inset-0 flex items-center justify-center bg-black/80 backdrop-blur-2xl transition-opacity animate-fadeIn">
           <div className="relative w-16 h-16">
             <div className="absolute inset-0 border-4 border-transparent border-t-white rounded-full animate-spin"></div>
-            <div className="absolute inset-0 border-4 border-transparent border-b-blue-500 rounded-full animate-spin-slow"></div>
+            <div className="absolute inset-0 border-4 border-transparent border-b-purple-400 rounded-full animate-spin-slow"></div>
             <div className="absolute inset-0 border-4 border-transparent border-l-purple-500 rounded-full animate-spin-reverse"></div>
           </div>
         </div>
       )}
       
-      <div className="max-w-md w-full space-y-8 p-8">
+      <div className="max-w-md w-full space-y-8 p-8 bg-white/10 rounded-lg shadow-lg shadow-purple-500/30">
         <div className="text-center">
-          <Link href="/" className="text-2xl font-bold text-white hover:text-white/90 transition-colors">
+          <Link href="/" className="text-2xl font-bold bg-gradient-to-r from-white via-purple-400 to-purple-700 text-transparent bg-clip-text drop-shadow-lg">
             EduMetrics
           </Link>
           <h2 className="mt-6 text-3xl font-bold text-white">Create your account</h2>
@@ -70,7 +70,7 @@ export default function SignUp() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="mt-1 block w-full px-4 py-3 bg-white/10 border border-white/10 rounded-md text-white"
+                className="mt-1 block w-full px-4 py-3 bg-white/10 border border-white/10 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent"
               />
             </div>
 
@@ -83,7 +83,7 @@ export default function SignUp() {
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="mt-1 block w-full px-4 py-3 bg-white/10 border border-white/10 rounded-md text-white"
+                className="mt-1 block w-full px-4 py-3 bg-white/10 border border-white/10 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent"
               />
             </div>
 
@@ -96,13 +96,13 @@ export default function SignUp() {
                 required
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
-                className="mt-1 block w-full px-4 py-3 bg-white/10 border border-white/10 rounded-md text-white"
+                className="mt-1 block w-full px-4 py-3 bg-white/10 border border-white/10 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent"
               />
             </div>
           </div>
 
           <div>
-            <button type="submit" className="w-full px-4 py-3 bg-white text-black hover:bg-gray-100 transition-colors rounded-md font-medium">
+            <button type="submit" className="w-full px-4 py-3 bg-white text-black hover:bg-purple-200 transition-colors rounded-md font-medium">
               Create account
             </button>
           </div>
@@ -122,38 +122,8 @@ export default function SignUp() {
         </div>
       </div>
 
-      <style jsx>{`
-        @keyframes fadeIn {
-          from { opacity: 0; }
-          to { opacity: 1; }
-        }
-
-        @keyframes spinSlow {
-          from { transform: rotate(0deg); }
-          to { transform: rotate(360deg); }
-        }
-
-        @keyframes spinReverse {
-          from { transform: rotate(0deg); }
-          to { transform: rotate(-360deg); }
-        }
-
-        .animate-fadeIn {
-          animation: fadeIn 0.3s ease-in-out;
-        }
-
-        .animate-spin {
-          animation: spinSlow 1.2s linear infinite;
-        }
-
-        .animate-spin-slow {
-          animation: spinSlow 2s linear infinite;
-        }
-
-        .animate-spin-reverse {
-          animation: spinReverse 1.5s linear infinite;
-        }
-      `}</style>
+      <div className="absolute top-1/3 -left-32 w-80 h-80 bg-gradient-to-br from-white via-purple-500 to-purple-900 rounded-full opacity-30 blur-3xl animate-pulse"></div>
+      <div className="absolute bottom-1/3 -right-32 w-80 h-80 bg-gradient-to-br from-black via-purple-600 to-purple-900 rounded-full opacity-30 blur-3xl animate-pulse"></div>
     </div>
   );
 }
